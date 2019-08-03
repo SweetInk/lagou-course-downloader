@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+    <property name="charSet" value="UTF-8"/>
+    <property name="logName" value="lagou-course-downloader"/>
+    <appender name="consoleLog" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>[%-5p] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] [%c] - %m%n</pattern>
+            <charset>${charSet}</charset>
+        </encoder>
+    </appender>
+    <appender name="fileInfoLog" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder>
+            <pattern>[%-5p] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] [%c] - %m%n</pattern>
+            <charset>${charSet}</charset>
+        </encoder>
+        <!--滚动策略-->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!--路径-->
+            <fileNamePattern>${logName}-info-%d.log</fileNamePattern>
+        </rollingPolicy>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="consoleLog"/>
+        <appender-ref ref="fileInfoLog"/>
+    </root>
+</configuration>
