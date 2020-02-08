@@ -54,6 +54,13 @@ public class Downloader {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
+        try {
+            log.info("检查ffmpeg是否存在");
+            int status = CmdExecutor.executeCmd(new File("."), "ffmpeg", "-version");
+        } catch (Exception e) {
+            log.error("{}", e.getMessage());
+            return;
+        }
         String courseUrl = "视频课程首页";
         String savePath = "视频保存位置";
         Downloader downloader = new Downloader(courseUrl, savePath);
@@ -126,12 +133,13 @@ public class Downloader {
             tryTerminal();
             return;
         }
-        log.info("所有视频META信息获取成功 total：", mediaLoaders.size());
+        log.info("所有视频META信息获取成功 total：{}", mediaLoaders.size());
         for (M3U8MediaLoader loader : mediaLoaders) {
             loader.run();
         }
         long end = System.currentTimeMillis();
         log.info("所有视频处理完成:{} s", (end - start) / 1000);
+        log.info("视频输出目录:{}", this.basePath.getAbsolutePath());
         tryTerminal();
     }
 

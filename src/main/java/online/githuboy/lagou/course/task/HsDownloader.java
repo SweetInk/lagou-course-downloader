@@ -64,6 +64,7 @@ public class HsDownloader implements Runnable {
             fos.close();
             latch.countDown();
         } catch (IOException e) {
+            latch.countDown();
             e.printStackTrace();
         }
 
