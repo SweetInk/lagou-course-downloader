@@ -46,7 +46,7 @@ Lagou课程的视频现托管在阿里云，[相关文档](https://help.aliyun.c
 把上图中Cookie值，复制粘贴到`CookieStore`中`cookie` 字段中.
 
 ```java
-String courseId = "视频课程首页url";
+String courseId = "课程ID";
 String savePath = "视频保存位置";
 Downloader downloader = new Downloader(courseId, savePath);
 downloader.start();
