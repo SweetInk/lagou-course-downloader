@@ -18,7 +18,8 @@ import java.util.concurrent.CountDownLatch;
  * @author suchu
  * @since 2019年8月2日
  */
-public class HsDownloader implements Runnable {
+@Deprecated
+public class HsDownloader implements Runnable, NamedTask {
     CountDownLatch latch;
     private String url;
     private M3U8MediaLoader m3U8;
@@ -67,6 +68,10 @@ public class HsDownloader implements Runnable {
             latch.countDown();
             e.printStackTrace();
         }
+    }
 
+    @Override
+    public String getTaskDescription() {
+        return fileName;
     }
 }

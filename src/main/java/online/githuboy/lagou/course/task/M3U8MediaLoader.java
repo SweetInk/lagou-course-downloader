@@ -1,9 +1,11 @@
 package online.githuboy.lagou.course.task;
 
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.CmdExecutor;
 import online.githuboy.lagou.course.CookieStore;
 import online.githuboy.lagou.course.ExecutorService;
+import online.githuboy.lagou.course.MediaLoader;
 import online.githuboy.lagou.course.utils.FileUtils;
 import online.githuboy.lagou.course.utils.HttpUtils;
 
@@ -23,7 +25,8 @@ import java.util.regex.Pattern;
  * @since 2019年8月3日
  */
 @Slf4j
-public class M3U8MediaLoader implements Runnable {
+@Deprecated
+public class M3U8MediaLoader implements Runnable, NamedTask, MediaLoader {
     private final static Pattern pattern = Pattern.compile("(URI=\")(.*)(\")");
     private final static int maxRetryCount = 3;
     CountDownLatch latch;
@@ -49,6 +52,8 @@ public class M3U8MediaLoader implements Runnable {
     private String fileName;
     private String fileId;
     private int retryCount = 0;
+    @Setter
+    private String url2;
 
     public M3U8MediaLoader(String m3u8Url, String fileName, String savePath, String fileId) {
         this.url = m3u8Url;
@@ -89,10 +94,10 @@ public class M3U8MediaLoader implements Runnable {
                 if (bytes.length > 0) {
                     File keySavePath = new File(baseFilePath, "video.key");
                     FileUtils.save(key, keySavePath);
-                    log.info("视频:{},解密key下载成功:savePath:{}", fileName, keySavePath.getAbsolutePath());
+                    log.info("视频解密key下载成功:savePath:{}", keySavePath.getAbsolutePath());
                     return true;
                 } else {
-                    log.error("获取视频:{},解密key url：{}\n失败:{}", fileName, keyUrlPath, "可能cookie过期获取没有购买视频");
+                    log.error("获取视频:{},解密key url：{}\n失败:{}", fileName, keyUrlPath, "可能cookie过期或者没有购买视频");
                     return false;
                 }
             } catch (Exception e) {
@@ -106,6 +111,8 @@ public class M3U8MediaLoader implements Runnable {
     public void load() throws IOException {
         byte[] download = HttpUtils.getContent(url);
         log.info("获取视频:{},m3u8文件:{} 内容成功", fileName, url);
+        FileUtils.save(download, new File(this.baseFilePath, "video_origin.m3u8"));
+        FileUtils.save(HttpUtils.getContent(url2), new File(this.baseFilePath, "video_encrypted.m3u8"));
         this.raw = new String(download);
         this.baseUrl = url.substring(0, url.lastIndexOf("/") + 1);
         hsList = new ArrayList<>(16);
@@ -132,7 +139,7 @@ public class M3U8MediaLoader implements Runnable {
             downloader.setLatch(latch);
             String fileName = downloader.getFileName();
             localHsList.add(fileName);
-            ExecutorService.execute(downloader);
+            ExecutorService.getHlsExecutor().execute(downloader);
         });
         rebuildM3U8(localHsList);
         mergeHsToMp4();
@@ -193,6 +200,16 @@ public class M3U8MediaLoader implements Runnable {
             } else {
                 log.info(" video:{}最大重试结束:{}", fileName, maxRetryCount);
             }
+        }
+    }
+
+    @Override
+    public String getTaskDescription() {
+        try {
+            return fileName + " -> hls_size:" + hsList.size();
+        } catch (Exception e) {
+            System.out.println("fileName exception:" + fileName);
+            throw e;
         }
     }
 }
