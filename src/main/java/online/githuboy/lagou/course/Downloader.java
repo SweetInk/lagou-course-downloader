@@ -65,9 +65,9 @@ public class Downloader {
             log.error("{}", e.getMessage());
             return;
         }
-        String courseUrl = "拉钩课程ID";
+        String courseId = "拉钩课程ID";
         String savePath = "下载好的视频保存目录";
-        Downloader downloader = new Downloader(courseUrl, savePath);
+        Downloader downloader = new Downloader(courseId, savePath);
         Thread logThread = new Thread(() -> {
             while (true) {
                 log.info("Thread pool:{}", ExecutorService.getExecutor());
