@@ -35,15 +35,25 @@ Lagou课程的视频现托管在阿里云，[相关文档](https://help.aliyun.c
 
 # 如何使用
 
-1. 成功登陆拉钩网后
+## 下载源码
 
-2. 浏览器打开调试工具
+打开shell或者cmd，输入`git clone https://github.com/SweetInk/lagou-course-downloader.git`
 
-3. 打开课程首页
+## 运行(以源码方式)
+
+1. 下载[IDEA](https://www.jetbrains.com/idea/download/#section=windows),并安装，导入之前下载好的源码
+
+2. 成功登陆拉钩网后
+
+3. 浏览器打开调试工具
+
+4. 打开课程首页
 
 ![](http://ww1.sinaimg.cn/large/005ViNx8ly1g5mdhltkh8j31yy0mf11q.jpg)
 
-把上图中Cookie值，复制粘贴到`CookieStore`中`cookie` 字段中.
+把上图中Cookie值，复制粘贴到`CookieStore.java`中`cookie` 字段中.
+
+替换`Downloader.java`代码中的`courseId`,`savePath`中的值为实际的值.
 
 ```java
 String courseId = "课程ID";
@@ -51,3 +61,4 @@ String savePath = "视频保存位置";
 Downloader downloader = new Downloader(courseId, savePath);
 downloader.start();
 ```
+5. 运行`Downloader#main()` 方法.
