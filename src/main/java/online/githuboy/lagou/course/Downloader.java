@@ -15,6 +15,7 @@ import org.jsoup.select.Elements;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class Downloader {
+
     private final static String COURSE_INFO_API = "https://gate.lagou.com/v1/neirong/kaiwu/getCourseLessons?courseId={0}";
     /**
      * 拉钩视频课程地址
@@ -54,7 +56,7 @@ public class Downloader {
     public Downloader(String courseId, String savePath) {
         this.courseId = courseId;
         this.savePath = savePath;
-        this.courseUrl = String.format(COURSE_INFO_API, courseId);
+        this.courseUrl = MessageFormat.format(COURSE_INFO_API, courseId);
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
@@ -63,7 +65,7 @@ public class Downloader {
             int status = CmdExecutor.executeCmd(new File("."), "ffmpeg", "-version");
         } catch (Exception e) {
             log.error("{}", e.getMessage());
-            return;
+            // return;
         }
         String courseId = "拉钩课程ID";
         String savePath = "下载好的视频保存目录";

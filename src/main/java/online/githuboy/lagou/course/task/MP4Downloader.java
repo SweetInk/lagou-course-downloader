@@ -51,7 +51,8 @@ public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
     private CountDownLatch latch;
 
     private void initDir() {
-        workDir = new File(basePath, videoName.replaceAll("/", "_") + "_" + lessonId);
+        String fileName = videoName.replaceAll("[\\\\:*?\"<>|]", "");
+        workDir = new File(basePath, fileName.replaceAll("/", "_") + "_" + lessonId);
         if (!workDir.exists()) {
             workDir.mkdirs();
         }
