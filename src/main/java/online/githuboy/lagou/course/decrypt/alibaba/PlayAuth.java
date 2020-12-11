@@ -1,4 +1,4 @@
-package online.githuboy.lagou.course.decrypt;
+package online.githuboy.lagou.course.decrypt.alibaba;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.parser.DefaultJSONParser;
@@ -16,7 +16,7 @@ import java.lang.reflect.Type;
 public class PlayAuth {
     private String AccessKeyId;
     private String AccessKeySecret;
-    //@JSONField(name = "AuthInfo",deserializeUsing = online.githuboy.lagou.course.decrypt.PlayAuth.AuthInfo.AuthInfoDeserializer.class)
+    //@JSONField(name = "AuthInfo",deserializeUsing = online.githuboy.lagou.course.decrypt.alibaba.PlayAuth.AuthInfo.AuthInfoDeserializer.class)
     private String AuthInfo;
     private String CustomerId;
     private String PlayDomain;
@@ -68,7 +68,7 @@ public class PlayAuth {
 
     public static PlayAuth from(String jsonText) {
         PlayAuth playAuth = JSON.parseObject(jsonText, PlayAuth.class);
-        online.githuboy.lagou.course.decrypt.PlayAuth.AuthInfo authInfo = JSON.parseObject(playAuth.getAuthInfo(), online.githuboy.lagou.course.decrypt.PlayAuth.AuthInfo.class);
+        PlayAuth.AuthInfo authInfo = JSON.parseObject(playAuth.getAuthInfo(), PlayAuth.AuthInfo.class);
         playAuth.setAuthObj(authInfo);
         return playAuth;
     }
