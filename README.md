@@ -3,11 +3,17 @@
 
 本程序仅供学习交流使用
 
-最后更新时间: 2020年8月7日
-
 # 更新日志
+## 2020年12月11日
 
-1. 支持最新的拉钩教育视频下载.
+- 解决签名不匹配问题
+
+- 跳过未发布的课程视频
+
+- 调整代码结构
+
+## 2020年8月7日
+- 支持最新的拉钩教育视频下载.
 
 
 # 前置要求
@@ -41,7 +47,7 @@ Lagou课程的视频现托管在阿里云，[相关文档](https://help.aliyun.c
 
 ## 运行(以源码方式)
 
-1. 下载[IDEA](https://www.jetbrains.com/idea/download/#section=windows),并安装，导入之前下载好的源码
+1. 下载 [IDEA](https://www.jetbrains.com/idea/download/#section=windows) ,并安装，导入之前下载好的源码
 
 2. 成功登陆拉钩网后
 
@@ -49,16 +55,15 @@ Lagou课程的视频现托管在阿里云，[相关文档](https://help.aliyun.c
 
 4. 打开课程首页
 
-![](http://ww1.sinaimg.cn/large/005ViNx8ly1g5mdhltkh8j31yy0mf11q.jpg)
+    ![](http://ww1.sinaimg.cn/large/005ViNx8ly1g5mdhltkh8j31yy0mf11q.jpg)
 
-把上图中Cookie值，复制粘贴到`CookieStore.java`中`cookie` 字段中.
+    把上图中Cookie值，复制粘贴到`CookieStore.java`中`cookie` 字段中.
 
-替换`Downloader.java`代码中的`courseId`,`savePath`中的值为实际的值.
-
+    替换`App.java`代码中的`courseId`,`savePath`中的值为实际的值.
 ```java
-String courseId = "课程ID";
-String savePath = "视频保存位置";
-Downloader downloader = new Downloader(courseId, savePath);
-downloader.start();
+    String courseId = "课程ID";
+    String savePath = "视频保存位置";
+    Downloader downloader = new Downloader(courseId, savePath);
+    downloader.start();
 ```
-5. 运行`Downloader#main()` 方法.
+5. 运行`App#main()` 方法.
