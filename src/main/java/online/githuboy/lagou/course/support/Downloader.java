@@ -86,7 +86,7 @@ public class Downloader {
                 String lessonName = lesson.getString("theme");
                 String status = lesson.getString("status");
                 if (!"RELEASE".equals(status)) {
-                    log.info("视频:{} [未发布]", lessonName);
+                    log.info("课程:【{}】 [未发布]", lessonName);
                     continue;
                 }
                 //insert your filter code,use for debug
@@ -103,7 +103,7 @@ public class Downloader {
                 String appId = lesson.getString("appId");
                 LessonInfo lessonInfo = LessonInfo.builder().lessonId(lessonId).lessonName(lessonName).fileId(fileId).appId(appId).fileEdk(fileEdk).fileUrl(fileUrl).build();
                 lessonInfoList.add(lessonInfo);
-                log.info("解析到课程信息：name：{},appId:{},fileId:{}", lessonName, appId, fileId);
+                log.info("解析到课程信息：【{}】,appId:{},fileId:{}", lessonName, appId, fileId);
             }
         }
         System.out.println(1);

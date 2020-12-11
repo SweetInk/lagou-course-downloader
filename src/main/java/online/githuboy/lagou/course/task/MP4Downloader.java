@@ -45,6 +45,7 @@ public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
     private File workDir;
     @Setter
     private CountDownLatch latch;
+    private volatile long startTime = 0;
 
     private void initDir() {
         String fileName = FileUtils.getCorrectFileName(videoName);
@@ -67,20 +68,22 @@ public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
             String fileId = jsonObject.getJSONObject("content").getJSONObject("mediaPlayInfoVo").getString("fileId");
             String playInfoRequestUrl = getPlayInfoRequestUrl(aliPlayAuth, fileId);
             String response = HttpRequest.get(playInfoRequestUrl).execute().body();
-            System.out.println("\n\nAPI request result:\n\n" + response);
+            System.out.println("\nAPI request result:\n\n" + response);
             JSONObject mediaObj = JSON.parseObject(response);
-            if (mediaObj.getString("Code") != null) throw new RuntimeException("获取媒体信息失败:");
+            if (mediaObj.getString("Code") != null) throw new RuntimeException("获取【{}】媒体信息失败:");
             JSONObject playInfoList = mediaObj.getJSONObject("PlayInfoList");
             JSONArray playInfos = playInfoList.getJSONArray("PlayInfo");
             if (playInfos.size() > 0) {
                 JSONObject playInfo = playInfos.getJSONObject(0);
                 String mp4Url = playInfo.getString("PlayURL");
-                log.info("解析到MP4播放地址:{},开始下载视频", mp4Url);
-                //01 | Spring Data JPA 初识
-                HttpRequest.get(mp4Url).execute().writeBody(new File(workDir, FileUtils.getCorrectFileName(videoName) + ".mp4"), new StreamProgress() {
+                log.info("解析出【{}】MP4播放地址:{}", videoName, mp4Url);
+                HttpRequest.get(mp4Url).execute(true).writeBody(new File(workDir, FileUtils.getCorrectFileName(videoName) + ".mp4"), new StreamProgress() {
                     @Override
                     public void start() {
-                        System.out.println("开始下载视频:" + videoName);
+                        log.info("开始下载视频【{}】", videoName);
+                        if (startTime == 0) {
+                            startTime = System.currentTimeMillis();
+                        }
                     }
 
                     @Override
@@ -89,11 +92,14 @@ public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
 
                     @Override
                     public void finish() {
-                        System.out.println("视频下载完成:" + videoName);
+                        log.info("视频下载完成【{}】,耗时:{} ms", videoName, System.currentTimeMillis() - startTime);
                         Stats.remove(videoName);
                         latch.countDown();
                     }
                 });
+            } else {
+                log.info("没有获取到视频【{}】播放地址:", videoName);
+                latch.countDown();
             }
             //latch.countDown();
         } catch (Exception e) {

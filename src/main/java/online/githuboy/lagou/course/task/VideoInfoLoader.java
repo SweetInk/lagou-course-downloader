@@ -58,11 +58,11 @@ public class VideoInfoLoader implements Runnable, NamedTask {
     public void run() {
         String url = MessageFormat.format(API_TEMPLATE, this.lessonId);
         try {
-            log.info("获取视频:{},信息，url：{}", lessonId, url);
+            log.info("获取视频信息URL:【{}】url：{}", lessonId, url);
             String videoJson = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
             JSONObject json = JSON.parseObject(videoJson);
             if (json.getInteger("state") != 1) {
-                log.info("视频:{},json：{}", videoName, videoJson);
+                log.info("获取视频视频信息失败:【{}】,json：{}", videoName, videoJson);
                 throw new RuntimeException("获取视频信息失败:" + json.getString("message"));
             }
             JSONObject result = json.getJSONObject("content");
@@ -103,7 +103,7 @@ public class VideoInfoLoader implements Runnable, NamedTask {
                 }
                 ExecutorService.execute(this);
             } else {
-                log.info(" video:{}最大重试结束:{}", videoName, maxRetryCount);
+                log.info(" video:【{}】最大重试结束:{}", videoName, maxRetryCount);
                 COUNTER.incrementAndGet();
                 latch.countDown();
             }

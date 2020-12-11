@@ -1,7 +1,7 @@
 package online.githuboy.lagou.course.support;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @date 2020/8/7
  */
 public class Stats {
-    static Map<String, AtomicInteger> failedCount = new HashMap<>();
+    static Map<String, AtomicInteger> failedCount = new ConcurrentHashMap<>();
 
     public static int incr(String key) {
         AtomicInteger integer = failedCount.computeIfAbsent(key, (k) -> new AtomicInteger(0));
