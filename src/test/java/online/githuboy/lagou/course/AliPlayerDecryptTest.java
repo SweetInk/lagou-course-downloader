@@ -4,6 +4,7 @@ import cn.hutool.http.HttpRequest;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import lombok.SneakyThrows;
+import online.githuboy.lagou.course.support.CookieStore;
 import online.githuboy.lagou.course.utils.HttpUtils;
 import org.junit.Test;
 

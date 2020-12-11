@@ -7,7 +7,7 @@ import lombok.Data;
 //@AllArgsConstructor
 @Builder
 public class LessonInfo {
-    private String lessionId;
+    private String lessonId;
     private String lessonName;
     private String appId;
     private String fileId;

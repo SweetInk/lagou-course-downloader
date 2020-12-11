@@ -1,10 +1,11 @@
-package online.githuboy.lagou.course;
+package online.githuboy.lagou.course.support;
 
 import online.githuboy.lagou.course.task.NamedTask;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -14,9 +15,11 @@ import java.util.stream.Collectors;
  * @since 2019年8月3日
  */
 public class ExecutorService {
+
+    public static final AtomicInteger COUNTER = new AtomicInteger(0);
     private final static TaskNamedThreadPoolExecutor executor = new TaskNamedThreadPoolExecutor(16, 16,
             0L, TimeUnit.MILLISECONDS,
-            new LinkedBlockingQueue<>());
+            new LinkedBlockingQueue<>(64));
 
     private final static TaskNamedThreadPoolExecutor hlsExecutor = new TaskNamedThreadPoolExecutor(16, 16,
             0L, TimeUnit.MILLISECONDS,
@@ -73,7 +76,9 @@ public class ExecutorService {
 
         @Override
         public String toString() {
-            return super.toString() + "\n taskQueueMapping -> \n" + m1.entrySet().stream().map(e -> e.getKey() + "__\n\t" + e.getValue().keySet().stream().map(NamedTask::getTaskDescription).collect(Collectors.joining("\n\t", "\t", "\n"))).collect(Collectors.joining("\n"));
+            synchronized (this) {
+                return super.toString() + "\n taskQueueMapping finished: " + COUNTER.get() + "-> \n" + new HashMap<>(m1).entrySet().stream().map(e -> e.getKey() + "__\n\t" + e.getValue().keySet().stream().map(NamedTask::getTaskDescription).collect(Collectors.joining("\n\t", "\t", "\n"))).collect(Collectors.joining("\n"));
+            }
         }
     }
 }
