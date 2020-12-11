@@ -1,11 +1,8 @@
-package online.githuboy.lagou.course.decrypt;
+package online.githuboy.lagou.course.decrypt.alibaba;
 
-import cn.hutool.http.HttpRequest;
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import jdk.nashorn.internal.objects.NativeString;
-import online.githuboy.lagou.course.CookieStore;
-import online.githuboy.lagou.course.utils.HttpUtils;
+import lombok.SneakyThrows;
 import sun.misc.BASE64Encoder;
 
 import javax.crypto.Mac;
@@ -21,6 +18,7 @@ import java.util.*;
  * @date 2020/8/6
  */
 public class AliPlayerDecrypt {
+    public static final String CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
     public static class WordCodec {
         public static String stringify(EncryptedData e) {
@@ -36,18 +34,15 @@ public class AliPlayerDecrypt {
 
     public static EncryptedData authKeyToEncryptData(String key) {
         int keyLength = key.length();
-        String str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-        int l = str.length();
+        int l = CHARS.length();
         int[] r = new int[256];
         for (int i = 0; i < l; i++) {
-            r[str.charAt(i)] = i;
+            r[CHARS.charAt(i)] = i;
         }
-        int charCode = str.charAt(64);
-        {
-            int cIdx = key.indexOf(charCode);
-            if (-1 != cIdx)
-                keyLength = cIdx;
-        }
+        int charCode = CHARS.charAt(64);
+        int cIdx = key.indexOf(charCode);
+        if (-1 != cIdx)
+            keyLength = cIdx;
         int[] result = new int[keyLength * 2];
         int i = 0;
         for (int j = 0; j < keyLength; j++) {
@@ -71,17 +66,24 @@ public class AliPlayerDecrypt {
         public int[] word;
     }
 
-    public static void main(String[] args) throws UnsupportedEncodingException {
+    public static String prettyJson(String json) {
+        if (null == json || json.length() <= 0) {
+            return json;
+        }
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = JSONObject.parseObject(json);
+        } catch (Exception e) {
+            return json;
+        }
+        return JSONObject.toJSONString(jsonObject, true);
+    }
 
-        String body = HttpUtils.get("https://gate.lagou.com/v1/neirong/kaiwu/getLessonPlayHistory?lessonId=300&isVideo=true", CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
-        JSONObject jsonObject = JSON.parseObject(body);
-        System.out.println(body);
-        if (jsonObject.getInteger("state") != 1) throw new RuntimeException(body);
-        String aliPlayAuth = jsonObject.getJSONObject("content").getJSONObject("mediaPlayInfoVo").getString("aliPlayAuth");
+    @SneakyThrows
+    public static String getPlayInfoRequestUrl(String aliPlayAuth, String fileId) {
         EncryptedData d = AliPlayerDecrypt.authKeyToEncryptData(aliPlayAuth);
         String stringify = WordCodec.stringify(d);
         PlayAuth playAuth = PlayAuth.from(stringify);
-        //playAuth.setAuthInfo("{\"CI\":\"whrsIqgklOAeOzIO2Je2QiRLI0GFb67v3dBjWhuO+E88YmRX5KcF4K3+lXLJWBQXZvBuAbvf/aSE\\r\\nPpafNqvWwD2/6Kk4uKMCqlT1WDxdHY0=\\r\\n\",\"Caller\":\"bAH/mdSd46DoiXGEigibc+uyl8KQ9iGhImfyS9ksgRc=\\r\\n\",\"ExpireTime\":\"2020-08-07T05:00:48Z\",\"MediaId\":\"218edfbc8849496ab579d1d76e5cb135\",\"PlayDomain\":\"vod.lagou.com\",\"Signature\":\"mbut5a8K2CQWVxHiWgO6LikK/U4=\"}");
         Map<String, String> publicParam = new HashMap<>();
         Map<String, String> privateParam = new HashMap<>();
         publicParam.put("AccessKeyId", playAuth.getAccessKeyId());
@@ -99,7 +101,7 @@ public class AliPlayerDecrypt {
         privateParam.put("PlayConfig", "{}");
         privateParam.put("ReAuthInfo", "{}");
         privateParam.put("SecurityToken", playAuth.getSecurityToken());
-        privateParam.put("VideoId", "218edfbc8849496ab579d1d76e5cb135");
+        privateParam.put("VideoId", fileId);
         List<String> allParams = getAllParams(publicParam, privateParam);
         String cqs = getCQS(allParams);
         String stringToSign =
@@ -108,24 +110,20 @@ public class AliPlayerDecrypt {
                         percentEncode(cqs);
         byte[] bytes = hmacSHA1Signature(playAuth.getAccessKeySecret(), stringToSign);
         String signature = newStringByBase64(bytes);
-        String queryString = cqs + "&Signature=" + signature;
-        String api = "https://vod.cn-shanghai.aliyuncs.com/?" + queryString;
-        String body1 = HttpRequest.get(api).execute().body();
-
-        System.out.println(stringToSign);
-        System.out.println(api);
-        System.out.println(stringify);
-        System.out.println("\n\nAPI request result:\n"+body1);
+       /* System.out.println("StringTOSign:\n" + stringToSign);
+        System.out.println("\nSignature       :" + signature);
+        System.out.println("\nSignatureEncoded:" + percentEncode(signature));*/
+        String queryString = cqs + "&Signature=" + percentEncode(signature);
+        return "https://vod.cn-shanghai.aliyuncs.com/?" + queryString;
     }
 
     /*特殊字符替换为转义字符*/
     public static String percentEncode(String value) {
         try {
-            String urlEncodeOrignStr = URLEncoder.encode(value, "UTF-8");
-            String plusReplaced = urlEncodeOrignStr.replace("+", "%20");
+            String urlEncodeOriginalStr = URLEncoder.encode(value, "UTF-8");
+            String plusReplaced = urlEncodeOriginalStr.replace("+", "%20");
             String starReplaced = plusReplaced.replace("*", "%2A");
-            String waveReplaced = starReplaced.replace("%7E", "~");
-            return waveReplaced;
+            return starReplaced.replace("%7E", "~");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -159,15 +157,15 @@ public class AliPlayerDecrypt {
     /*获取 CanonicalizedQueryString*/
     public static String getCQS(List<String> allParams) {
         ParamsComparator paramsComparator = new ParamsComparator();
-        Collections.sort(allParams, paramsComparator);
-        String cqString = "";
+        allParams.sort(paramsComparator);
+        StringBuilder cqString = new StringBuilder();
         for (int i = 0; i < allParams.size(); i++) {
-            cqString += allParams.get(i);
+            cqString.append(allParams.get(i));
             if (i != allParams.size() - 1) {
-                cqString += "&";
+                cqString.append("&");
             }
         }
-        return cqString;
+        return cqString.toString();
     }
 
     /*字符串参数比较器，按字母序升序*/
@@ -195,12 +193,11 @@ public class AliPlayerDecrypt {
         return null;
     }
 
-    public static String newStringByBase64(byte[] bytes)
-            throws UnsupportedEncodingException {
+    public static String newStringByBase64(byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
             return null;
         }
-        return new String(new BASE64Encoder().encode(bytes));
+        return new BASE64Encoder().encode(bytes);
     }
 
     /*生成当前UTC时间戳Time*/
@@ -212,7 +209,6 @@ public class AliPlayerDecrypt {
     }
 
     public static String generateRandom() {
-        String signatureNonce = UUID.randomUUID().toString();
-        return signatureNonce;
+        return UUID.randomUUID().toString();
     }
 }

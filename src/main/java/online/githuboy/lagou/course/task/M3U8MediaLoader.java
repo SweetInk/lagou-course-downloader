@@ -2,10 +2,10 @@ package online.githuboy.lagou.course.task;
 
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import online.githuboy.lagou.course.CmdExecutor;
-import online.githuboy.lagou.course.CookieStore;
-import online.githuboy.lagou.course.ExecutorService;
-import online.githuboy.lagou.course.MediaLoader;
+import online.githuboy.lagou.course.support.CmdExecutor;
+import online.githuboy.lagou.course.support.CookieStore;
+import online.githuboy.lagou.course.support.ExecutorService;
+import online.githuboy.lagou.course.support.MediaLoader;
 import online.githuboy.lagou.course.utils.FileUtils;
 import online.githuboy.lagou.course.utils.HttpUtils;
 
@@ -33,7 +33,7 @@ public class M3U8MediaLoader implements Runnable, NamedTask, MediaLoader {
     /**
      * m3u8视频地址
      */
-    private String url;
+    private final String url;
     private List<String> hsList;
     /**
      * m3u8文件内容
@@ -48,9 +48,9 @@ public class M3U8MediaLoader implements Runnable, NamedTask, MediaLoader {
      */
     private byte[] key;
     private String keyUrlPath;
-    private File baseFilePath;
-    private String fileName;
-    private String fileId;
+    private final File baseFilePath;
+    private final String fileName;
+    private final String fileId;
     private int retryCount = 0;
     @Setter
     private String url2;

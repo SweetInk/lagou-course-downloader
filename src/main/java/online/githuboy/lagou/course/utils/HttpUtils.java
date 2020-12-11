@@ -19,6 +19,6 @@ public class HttpUtils {
     }
 
     public static HttpRequest get(String url, String cookie) {
-        return HttpRequest.get(url).header(Header.COOKIE, cookie);
+        return HttpRequest.get(url).timeout(5000).header(Header.COOKIE, cookie);
     }
 }

@@ -8,22 +8,18 @@ import com.alibaba.fastjson.JSONObject;
 import lombok.Builder;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import online.githuboy.lagou.course.CookieStore;
-import online.githuboy.lagou.course.ExecutorService;
-import online.githuboy.lagou.course.MediaLoader;
-import online.githuboy.lagou.course.Stats;
-import online.githuboy.lagou.course.decrypt.AliPlayerDecrypt;
-import online.githuboy.lagou.course.decrypt.PlayAuth;
+import online.githuboy.lagou.course.support.CookieStore;
+import online.githuboy.lagou.course.support.ExecutorService;
+import online.githuboy.lagou.course.support.MediaLoader;
+import online.githuboy.lagou.course.support.Stats;
+import online.githuboy.lagou.course.utils.FileUtils;
 import online.githuboy.lagou.course.utils.HttpUtils;
 
 import java.io.File;
 import java.text.MessageFormat;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
-import static online.githuboy.lagou.course.decrypt.AliPlayerDecrypt.*;
+import static online.githuboy.lagou.course.decrypt.alibaba.AliPlayerDecrypt.getPlayInfoRequestUrl;
 
 /**
  * MP4下载器
@@ -37,11 +33,11 @@ public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
     private static final String API_TEMPLATE = "https://gate.lagou.com/v1/neirong/kaiwu/getLessonPlayHistory?lessonId={0}&isVideo=true";
 
     private final static int maxRetryCount = 3;
-    private String videoName;
-    private String appId;
-    private String fileId;
-    private String fileUrl;
-    private String lessonId;
+    private final String videoName;
+    private final String appId;
+    private final String fileId;
+    private final String fileUrl;
+    private final String lessonId;
     private volatile int retryCount = 0;
     @Setter
     private File basePath;
@@ -51,7 +47,8 @@ public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
     private CountDownLatch latch;
 
     private void initDir() {
-        workDir = new File(basePath, videoName.replaceAll("/", "_") + "_" + lessonId);
+        String fileName = FileUtils.getCorrectFileName(videoName);
+        workDir = new File(basePath, fileName.replaceAll("/", "_") + "_" + lessonId);
         if (!workDir.exists()) {
             workDir.mkdirs();
         }
@@ -62,59 +59,25 @@ public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
         initDir();
         String url = MessageFormat.format(API_TEMPLATE, this.lessonId);
         try {
-            log.info("获取视频:{},信息，url：{}", lessonId, url);
+            log.info("获取课程:{}信息，url：{}", lessonId, url);
             String body = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
             JSONObject jsonObject = JSON.parseObject(body);
-            System.out.println(body);
-            if (jsonObject.getInteger("state") != 1) throw new RuntimeException(body);
+            if (jsonObject.getInteger("state") != 1) throw new RuntimeException("获取课程信息失败:" + body);
             String aliPlayAuth = jsonObject.getJSONObject("content").getJSONObject("mediaPlayInfoVo").getString("aliPlayAuth");
             String fileId = jsonObject.getJSONObject("content").getJSONObject("mediaPlayInfoVo").getString("fileId");
-            AliPlayerDecrypt.EncryptedData d = AliPlayerDecrypt.authKeyToEncryptData(aliPlayAuth);
-            String stringify = AliPlayerDecrypt.WordCodec.stringify(d);
-            PlayAuth playAuth = PlayAuth.from(stringify);
-            Map<String, String> publicParam = new HashMap<>();
-            Map<String, String> privateParam = new HashMap<>();
-            publicParam.put("AccessKeyId", playAuth.getAccessKeyId());
-            publicParam.put("Timestamp", generateTimestamp());
-            publicParam.put("SignatureMethod", "HMAC-SHA1");
-            publicParam.put("SignatureVersion", "1.0");
-            publicParam.put("SignatureNonce", generateRandom());
-            publicParam.put("Format", "JSON");
-            publicParam.put("Version", "2017-03-21");
-
-            privateParam.put("Action", "GetPlayInfo");
-            privateParam.put("AuthInfo", playAuth.getAuthInfo());
-            privateParam.put("AuthTimeout", "7200");
-            privateParam.put("Definition", "240");
-            privateParam.put("PlayConfig", "{}");
-            privateParam.put("ReAuthInfo", "{}");
-            privateParam.put("SecurityToken", playAuth.getSecurityToken());
-            privateParam.put("VideoId", fileId);
-            List<String> allParams = getAllParams(publicParam, privateParam);
-            String cqs = getCQS(allParams);
-            String stringToSign =
-                    "GET" + "&" +
-                            percentEncode("/") + "&" +
-                            percentEncode(cqs);
-            byte[] bytes = hmacSHA1Signature(playAuth.getAccessKeySecret(), stringToSign);
-            String signature = newStringByBase64(bytes);
-            String queryString = cqs + "&Signature=" + signature;
-            String api = "https://vod.cn-shanghai.aliyuncs.com/?" + queryString;
-            String body1 = HttpRequest.get(api).execute().body();
-
-            System.out.println(stringToSign);
-            System.out.println(api);
-//            System.out.println(stringify);
-            System.out.println("\n\nAPI request result:\n\n" + body1);
-            JSONObject mediaObj = JSON.parseObject(body1);
-            if (mediaObj.getString("Code") != null) throw new RuntimeException("获取媒体信息失败");
+            String playInfoRequestUrl = getPlayInfoRequestUrl(aliPlayAuth, fileId);
+            String response = HttpRequest.get(playInfoRequestUrl).execute().body();
+            System.out.println("\n\nAPI request result:\n\n" + response);
+            JSONObject mediaObj = JSON.parseObject(response);
+            if (mediaObj.getString("Code") != null) throw new RuntimeException("获取媒体信息失败:");
             JSONObject playInfoList = mediaObj.getJSONObject("PlayInfoList");
             JSONArray playInfos = playInfoList.getJSONArray("PlayInfo");
             if (playInfos.size() > 0) {
                 JSONObject playInfo = playInfos.getJSONObject(0);
                 String mp4Url = playInfo.getString("PlayURL");
-                log.info("解析到MP4播放地址:{}", mp4Url);
-                HttpRequest.get(mp4Url).execute().writeBody(new File(workDir, videoName + ".mp4"), new StreamProgress() {
+                log.info("解析到MP4播放地址:{},开始下载视频", mp4Url);
+                //01 | Spring Data JPA 初识
+                HttpRequest.get(mp4Url).execute().writeBody(new File(workDir, FileUtils.getCorrectFileName(videoName) + ".mp4"), new StreamProgress() {
                     @Override
                     public void start() {
                         System.out.println("开始下载视频:" + videoName);

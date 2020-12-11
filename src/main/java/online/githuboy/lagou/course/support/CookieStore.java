@@ -1,4 +1,4 @@
-package online.githuboy.lagou.course;
+package online.githuboy.lagou.course.support;
 
 /**
  * CookieStore
