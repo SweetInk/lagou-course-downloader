@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 下载器
@@ -57,8 +58,12 @@ public class Downloader {
     public void start() throws IOException, InterruptedException {
         start = System.currentTimeMillis();
         parseLessonInfo2();
-        parseVideoInfo();
-        downloadMedia();
+        int i = parseVideoInfo();
+        if (i > 0) {
+            downloadMedia();
+        } else {
+            log.info("\n===>所有课程都下载完成了");
+        }
 
     }
 
@@ -78,6 +83,7 @@ public class Downloader {
         if (!basePath.exists()) {
             basePath.mkdirs();
         }
+        log.info("====>正在下载《{}》 courseId={}", courseName,this.courseId);
         for (int i = 0; i < courseSections.size(); i++) {
             JSONObject courseSection = courseSections.getJSONObject(i);
             JSONArray courseLessons = courseSection.getJSONArray("courseLessons");
@@ -103,22 +109,28 @@ public class Downloader {
                 String appId = lesson.getString("appId");
                 LessonInfo lessonInfo = LessonInfo.builder().lessonId(lessonId).lessonName(lessonName).fileId(fileId).appId(appId).fileEdk(fileEdk).fileUrl(fileUrl).build();
                 lessonInfoList.add(lessonInfo);
-                log.info("解析到课程信息：【{}】,appId:{},fileId:{}", lessonName, appId, fileId);
+                log.debug("解析到课程信息：【{}】,appId:{},fileId:{}", lessonName, appId, fileId);
             }
         }
-        System.out.println(1);
     }
 
-    private void parseVideoInfo() {
+    private int parseVideoInfo() {
+        AtomicInteger videoSize = new AtomicInteger();
         latch = new CountDownLatch(lessonInfoList.size());
         mediaLoaders = new Vector<>();
         lessonInfoList.forEach(lessonInfo -> {
-            VideoInfoLoader loader = new VideoInfoLoader(lessonInfo.getLessonName(), lessonInfo.getAppId(), lessonInfo.getFileId(), lessonInfo.getFileUrl(), lessonInfo.getLessonId());
-            loader.setM3U8MediaLoaders(mediaLoaders);
-            loader.setBasePath(this.basePath);
-            loader.setLatch(latch);
-            ExecutorService.execute(loader);
+            if (!Mp4History.contains(lessonInfo.getLessonId())) {
+                videoSize.getAndIncrement();
+                VideoInfoLoader loader = new VideoInfoLoader(lessonInfo.getLessonName(), lessonInfo.getAppId(), lessonInfo.getFileId(), lessonInfo.getFileUrl(), lessonInfo.getLessonId());
+                loader.setM3U8MediaLoaders(mediaLoaders);
+                loader.setBasePath(this.basePath);
+                loader.setLatch(latch);
+                ExecutorService.execute(loader);
+            } else {
+                log.info("课程【{}】已经下载过了", lessonInfo.getLessonName());
+            }
         });
+        return videoSize.intValue();
     }
 
     private void downloadMedia() throws InterruptedException {

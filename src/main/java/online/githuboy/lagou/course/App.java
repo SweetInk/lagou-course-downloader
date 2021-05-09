@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.support.CmdExecutor;
 import online.githuboy.lagou.course.support.Downloader;
 import online.githuboy.lagou.course.support.ExecutorService;
+import online.githuboy.lagou.course.support.Mp4History;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,15 +18,18 @@ import java.io.IOException;
 @Slf4j
 public class App {
     public static void main(String[] args) throws IOException, InterruptedException {
+
+        Mp4History.loadHistory();
+
         try {
-            log.info("检查ffmpeg是否存在");
             int status = CmdExecutor.executeCmd(new File("."), "ffmpeg", "-version");
+            log.debug("检查ffmpeg是否存在,{}", status);
         } catch (Exception e) {
             log.error("{}", e.getMessage());
             // return;
         }
         //拉钩课程ID
-        String courseId = "490";
+        String courseId = "716";
         //视频保存的目录
         String savePath = "D:\\lagou";
         Downloader downloader = new Downloader(courseId, savePath);
