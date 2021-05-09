@@ -14,9 +14,12 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static online.githuboy.lagou.course.support.ExecutorService.COUNTER;
 
 /**
  * 下载器
@@ -57,17 +60,20 @@ public class Downloader {
 
     public void start() throws IOException, InterruptedException {
         start = System.currentTimeMillis();
-        parseLessonInfo2();
-        int i = parseVideoInfo();
-        if (i > 0) {
-            downloadMedia();
-        } else {
-            log.info("\n===>所有课程都下载完成了");
+        List<LessonInfo> i1 = parseLessonInfo2();
+        if (i1.size() > 0) {
+            int i = parseVideoInfo(i1);
+            if (i > 0) {
+                downloadMedia();
+            } else {
+                log.info("===>所有课程都下载完成了");
+            }
         }
-
     }
 
-    private void parseLessonInfo2() throws IOException {
+    private List<LessonInfo> parseLessonInfo2() throws IOException {
+        List<LessonInfo> lessonInfoList = new ArrayList<>();
+
         String strContent = HttpUtils
                 .get(courseUrl, CookieStore.getCookie())
                 .header("x-l-req-header", " {deviceType:1}")
@@ -111,13 +117,16 @@ public class Downloader {
                 }
                 String appId = lesson.getString("appId");
                 LessonInfo lessonInfo = LessonInfo.builder().lessonId(lessonId).lessonName(lessonName).fileId(fileId).appId(appId).fileEdk(fileEdk).fileUrl(fileUrl).build();
-                lessonInfoList.add(lessonInfo);
+                if (!Mp4History.contains(lessonInfo.getLessonId())) {
+                    lessonInfoList.add(lessonInfo);
+                }
                 log.debug("解析到课程信息：【{}】,appId:{},fileId:{}", lessonName, appId, fileId);
             }
         }
+        return lessonInfoList;
     }
 
-    private int parseVideoInfo() {
+    private int parseVideoInfo(List<LessonInfo> lessonInfoList) {
         AtomicInteger videoSize = new AtomicInteger();
         latch = new CountDownLatch(lessonInfoList.size());
         mediaLoaders = new Vector<>();
@@ -131,6 +140,8 @@ public class Downloader {
                 ExecutorService.execute(loader);
             } else {
                 log.info("课程【{}】已经下载过了", lessonInfo.getLessonName());
+                latch.countDown();
+                COUNTER.incrementAndGet();
             }
         });
         return videoSize.intValue();
@@ -138,6 +149,9 @@ public class Downloader {
 
     private void downloadMedia() throws InterruptedException {
         log.info("等待获取视频信息任务完成...");
+        System.out.println(ExecutorService.COUNTER);
+        BlockingQueue<Runnable> queue = ExecutorService.getExecutor().getQueue();
+        System.out.println(queue.size());
         latch.await();
         if (mediaLoaders.size() != lessonInfoList.size()) {
             log.info("视频META信息没有全部下载成功: success:{},total:{}", mediaLoaders.size(), lessonInfoList.size());
