@@ -16,6 +16,8 @@ public class Course {
      * @return 当前账户下的所有课程的id
      */
     public static List<String> getAllCoursePurchasedRecordForPC() {
+
+//        如果这里获取失败，注意后面这个参数t是怎么回事？可以登录网站获取下
         String allCourseUrl = "https://gate.lagou.com/v1/neirong/kaiwu/getAllCoursePurchasedRecordForPC?t=1620562912369";
         List<String> courseIds = new ArrayList<>();
         String strContent = HttpUtils

@@ -22,12 +22,16 @@ public class App2 {
         allCoursePurchasedRecordForPC.remove("1");
         allCoursePurchasedRecordForPC.remove("287");
         allCoursePurchasedRecordForPC.remove("490");
+        allCoursePurchasedRecordForPC.remove("615");
+        allCoursePurchasedRecordForPC.remove("640");
         allCoursePurchasedRecordForPC.remove("668");
         allCoursePurchasedRecordForPC.remove("685");
         allCoursePurchasedRecordForPC.remove("716");
         allCoursePurchasedRecordForPC.remove("729");
         allCoursePurchasedRecordForPC.remove("753");
+        allCoursePurchasedRecordForPC.remove("822");
         allCoursePurchasedRecordForPC.remove("837");
+        allCoursePurchasedRecordForPC.remove("869"); // 这个视频有毒
 
         //视频保存的目录
         String savePath = "D:\\lagou";

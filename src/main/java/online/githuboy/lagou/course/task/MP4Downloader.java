@@ -72,52 +72,41 @@ public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
             String response = HttpRequest.get(playInfoRequestUrl).execute().body();
             log.debug("\nAPI request result:\n\n" + response);
             JSONObject mediaObj = JSON.parseObject(response);
-            if (mediaObj.getString("Code") != null) throw new RuntimeException("获取【{}】媒体信息失败:");
+            if (mediaObj.getString("Code") != null) throw new RuntimeException("获取媒体信息失败:");
             JSONObject playInfoList = mediaObj.getJSONObject("PlayInfoList");
             JSONArray playInfos = playInfoList.getJSONArray("PlayInfo");
             if (playInfos.size() > 0) {
                 JSONObject playInfo = playInfos.getJSONObject(0);
                 String mp4Url = playInfo.getString("PlayURL");
                 log.info("解析出【{}】MP4播放地址:{}", videoName, mp4Url);
-                try {
-                    HttpRequest.get(mp4Url).execute(true).writeBody(new File(workDir, FileUtils.getCorrectFileName(videoName) + ".mp4"), new StreamProgress() {
-                        @Override
-                        public void start() {
-                            log.info("开始下载视频【{}】lessonId={}", videoName, lessonId);
-                            if (startTime == 0) {
-                                startTime = System.currentTimeMillis();
-                            }
-                        }
 
-                        @Override
-                        public void progress(long l) {
+                HttpRequest.get(mp4Url).execute(true).writeBody(new File(workDir, FileUtils.getCorrectFileName(videoName) + ".mp4"), new StreamProgress() {
+                    @Override
+                    public void start() {
+                        log.info("开始下载视频【{}】lessonId={}", videoName, lessonId);
+                        if (startTime == 0) {
+                            startTime = System.currentTimeMillis();
                         }
-
-                        @Override
-                        public void finish() {
-                            log.info("视频下载完成【{}】,耗时:{} ms", videoName, System.currentTimeMillis() - startTime);
-                            Stats.remove(videoName);
-                            Mp4History.append(lessonId);
-                            latch.countDown();
-                        }
-                    });
-                } catch (Exception e) {
-                    if (latch != null) {
-                        latch.countDown();
                     }
-                    log.error("\n====>", e);
-                }
-//                finally {
-//                    if (latch!=null){
-//                        latch.countDown();
-//                    }
-//                }
+
+                    @Override
+                    public void progress(long l) {
+                    }
+
+                    @Override
+                    public void finish() {
+                        Stats.remove(videoName);
+                        Mp4History.append(lessonId);
+                        latch.countDown();
+                        long count = latch.getCount();
+                        log.info("视频下载完成【{}】,耗时:{} s，剩余{}", videoName, (System.currentTimeMillis() - startTime) / 1000, count);
+                    }
+                });
 
             } else {
                 log.info("没有获取到视频【{}】播放地址:", videoName);
                 latch.countDown();
             }
-            //latch.countDown();
         } catch (Exception e) {
             log.error("获取视频:{}信息失败:", videoName, e);
             if (retryCount < maxRetryCount) {

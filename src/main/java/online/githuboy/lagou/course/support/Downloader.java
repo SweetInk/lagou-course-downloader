@@ -82,8 +82,11 @@ public class Downloader {
         this.basePath = new File(savePath, this.courseId + "_" + courseName);
         if (!basePath.exists()) {
             basePath.mkdirs();
+            log.info("视频存放文件夹{}", basePath.getAbsolutePath());
         }
-        log.info("====>正在下载《{}》 courseId={}", courseName,this.courseId);
+
+        log.info("\n\n\n");
+        log.info("====>正在下载《{}》 courseId={}", courseName, this.courseId);
         for (int i = 0; i < courseSections.size(); i++) {
             JSONObject courseSection = courseSections.getJSONObject(i);
             JSONArray courseLessons = courseSection.getJSONArray("courseLessons");
