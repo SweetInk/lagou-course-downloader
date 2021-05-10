@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.domain.LessonInfo;
 import online.githuboy.lagou.course.task.VideoInfoLoader;
+import online.githuboy.lagou.course.utils.DownloadType;
 import online.githuboy.lagou.course.utils.HttpUtils;
 
 import java.io.File;
@@ -16,7 +17,6 @@ import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static online.githuboy.lagou.course.support.ExecutorService.COUNTER;
@@ -52,10 +52,19 @@ public class Downloader {
 
     private long start;
 
+    private DownloadType downloadType = DownloadType.VIDEO;
+
     public Downloader(String courseId, String savePath) {
         this.courseId = courseId;
         this.savePath = savePath;
         this.courseUrl = MessageFormat.format(COURSE_INFO_API, courseId);
+    }
+
+    public Downloader(String courseId, String savePath, DownloadType downloadType) {
+        this.courseId = courseId;
+        this.savePath = savePath;
+        this.courseUrl = MessageFormat.format(COURSE_INFO_API, courseId);
+        this.downloadType = downloadType;
     }
 
     public void start() throws IOException, InterruptedException {
@@ -64,7 +73,12 @@ public class Downloader {
         if (i1.size() > 0) {
             int i = parseVideoInfo(i1);
             if (i > 0) {
-                downloadMedia(i);
+                if(this.downloadType==DownloadType.ALL || this.downloadType==DownloadType.VIDEO){
+                    downloadMedia(i);
+                }
+                if(this.downloadType==DownloadType.ALL || this.downloadType==DownloadType.TEXT){
+
+                }
             } else {
                 log.info("===>所有课程都下载完成了");
             }
@@ -126,7 +140,7 @@ public class Downloader {
                 } else {
                     log.info("课程【{}】已经下载过了", lessonInfo.getLessonName());
                 }
-                log.debug("解析到课程信息：【{}】,appId:{},fileId:{}", lessonName, appId, fileId);
+                log.info("解析到课程信息：【{}】,appId:{},fileId:{}", lessonName, appId, fileId);
             }
         }
         return lessonInfoList;

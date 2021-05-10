@@ -58,7 +58,7 @@ public class VideoInfoLoader implements Runnable, NamedTask {
     public void run() {
         String url = MessageFormat.format(API_TEMPLATE, this.lessonId);
         try {
-            log.debug("获取视频信息URL:【{}】url：{}", lessonId, url);
+            log.info("获取视频信息URL:【{}】url：{}", lessonId, url);
             String videoJson = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
             JSONObject json = JSON.parseObject(videoJson);
             Integer state = json.getInteger("state");
