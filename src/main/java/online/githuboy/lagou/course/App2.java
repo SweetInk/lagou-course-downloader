@@ -36,7 +36,7 @@ public class App2 {
         allCoursePurchasedRecordForPC.remove("869"); // 这个视频有毒
 
         //视频保存的目录
-        String savePath = "D:\\lagou";
+        String savePath = "lagou";
 
         // 开始下载所有课程
         for (String courseId : allCoursePurchasedRecordForPC) {

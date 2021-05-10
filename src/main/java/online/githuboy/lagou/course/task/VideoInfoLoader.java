@@ -76,7 +76,6 @@ public class VideoInfoLoader implements Runnable, NamedTask {
                 return;
             }
             if (videoMedia != null) {
-                //JSONObject o = transcodeList.getJSONObject(transcodeList.size() - 1);
                 String m3u8Url = videoMedia.getString("fileUrl");
                 if (m3u8Url != null) {
                     log.info("获取视频:【{}】m3u8播放地址成功:{}", videoName, m3u8Url);
