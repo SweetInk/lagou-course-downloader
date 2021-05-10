@@ -11,7 +11,7 @@ import java.io.IOException;
 
 /**
  * 启动类
- *
+ *  下载指定课程
  *
  * @author suchu
  * @date 2020/12/11

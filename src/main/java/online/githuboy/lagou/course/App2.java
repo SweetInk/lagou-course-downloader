@@ -10,6 +10,7 @@ import java.util.List;
 
 /**
  * 启动类
+    批量下载，下载账号下所有视频
  *
  * @author suchu
  * @date 2020/12/11
