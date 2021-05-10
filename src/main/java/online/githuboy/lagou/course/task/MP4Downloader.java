@@ -17,6 +17,7 @@ import online.githuboy.lagou.course.utils.FileUtils;
 import online.githuboy.lagou.course.utils.HttpUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.concurrent.CountDownLatch;
 
@@ -100,6 +101,10 @@ public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
                         latch.countDown();
                         long count = latch.getCount();
                         log.info("====>视频下载完成【{}】,耗时:{} s，剩余{}", videoName, (System.currentTimeMillis() - startTime) / 1000, count);
+//                        TODO 最后一个文件下载完成后，在文件夹里面加上一个下载完成的txt文件备注。这样方便对下载完成的文件进行处理
+                        if (count == 0) {
+
+                        }
                     }
                 });
 

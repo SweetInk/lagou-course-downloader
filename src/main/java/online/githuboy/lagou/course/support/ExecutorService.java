@@ -1,6 +1,8 @@
 package online.githuboy.lagou.course.support;
 
 import online.githuboy.lagou.course.task.NamedTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,6 +17,8 @@ import java.util.stream.Collectors;
  * @since 2019年8月3日
  */
 public class ExecutorService {
+
+    static final Logger logger = LoggerFactory.getLogger(ExecutorService.class);
 
     public static final AtomicInteger COUNTER = new AtomicInteger(0);
     private final static TaskNamedThreadPoolExecutor executor = new TaskNamedThreadPoolExecutor(16, 16,
@@ -81,4 +85,18 @@ public class ExecutorService {
             }
         }
     }
+
+    /**
+     * 主动退出程序
+     *
+     * @throws InterruptedException
+     */
+    public static void tryTerminal() throws InterruptedException {
+        logger.info("程序将在{}s后退出", 5);
+        ExecutorService.getExecutor().shutdown();
+        ExecutorService.getHlsExecutor().shutdown();
+        ExecutorService.getHlsExecutor().awaitTermination(5, TimeUnit.SECONDS);
+        ExecutorService.getExecutor().awaitTermination(5, TimeUnit.SECONDS);
+    }
+
 }

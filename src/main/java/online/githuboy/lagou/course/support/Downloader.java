@@ -165,7 +165,7 @@ public class Downloader {
         latch.await();
         if (mediaLoaders.size() != i) {
             log.info("视频META信息没有全部下载成功: success:{},total:{}", mediaLoaders.size(), i);
-            tryTerminal();
+            ExecutorService.tryTerminal();
             return;
         }
         log.info("所有视频META信息获取成功 total：{}", mediaLoaders.size());
@@ -179,6 +179,12 @@ public class Downloader {
         long end = System.currentTimeMillis();
         log.info("所有视频处理耗时:{} s", (end - start) / 1000);
         log.info("视频输出目录:{}", this.basePath.getAbsolutePath());
+        File file = new File(basePath, "下载完成.txt");
+        try {
+            file.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         if (!Stats.isEmpty()) {
             log.info("\n\n失败统计信息\n\n");
@@ -187,17 +193,5 @@ public class Downloader {
 //        tryTerminal();
     }
 
-    /**
-     * 主动退出程序
-     *
-     * @throws InterruptedException
-     */
-    private void tryTerminal() throws InterruptedException {
-        log.info("程序将在{}s后退出", 5);
-        ExecutorService.getExecutor().shutdown();
-        ExecutorService.getHlsExecutor().shutdown();
-        ExecutorService.getHlsExecutor().awaitTermination(5, TimeUnit.SECONDS);
-        ExecutorService.getExecutor().awaitTermination(5, TimeUnit.SECONDS);
-    }
 
 }

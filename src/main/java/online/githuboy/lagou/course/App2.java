@@ -3,6 +3,7 @@ package online.githuboy.lagou.course;
 import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.support.Course;
 import online.githuboy.lagou.course.support.Downloader;
+import online.githuboy.lagou.course.support.ExecutorService;
 
 import java.io.IOException;
 import java.util.List;
@@ -54,6 +55,7 @@ public class App2 {
             downloader.start();
         }
         log.info("\n====>程序运行完成");
+        ExecutorService.tryTerminal();
 
 //        logThread.start();
     }
