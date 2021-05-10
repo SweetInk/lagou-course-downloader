@@ -3,6 +3,8 @@ package online.githuboy.lagou.course.support;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import online.githuboy.lagou.course.utils.HttpUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +13,7 @@ import java.util.List;
  * @author eric
  */
 public class Course {
+    private static final Logger log = LoggerFactory.getLogger(Course.class);
 
     /**
      * @return 当前账户下的所有课程的id
@@ -37,11 +40,17 @@ public class Course {
                 JSONObject o = allCoursePurchasedRecord.getJSONObject(i);
                 JSONArray courseRecordList = o.getJSONArray("courseRecordList");
                 for (int j = 0; j < courseRecordList.size(); j++) {
-                    String id = courseRecordList.getJSONObject(j).getString("id");
+                    JSONObject jsonObject1 = courseRecordList.getJSONObject(j);
+                    String name = jsonObject1.getString("name");
+                    String id = jsonObject1.getString("id");
+                    String updateProgress = jsonObject1.getString("updateProgress");
+                    log.info("《{}》\t id={}\t {}", name, id, updateProgress);
                     courseIds.add(id);
                 }
             }
         }
+
+        log.info("一共有{}门课程", courseIds.size());
 
         return courseIds;
     }

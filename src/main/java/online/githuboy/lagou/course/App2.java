@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * 启动类
-    批量下载，下载账号下所有视频
+ * 批量下载，下载账号下所有视频
  *
  * @author suchu
  * @date 2020/12/11
@@ -38,7 +38,7 @@ public class App2 {
         //视频保存的目录
         String savePath = "D:\\lagou";
 
-
+        // 开始下载所有课程
         for (String courseId : allCoursePurchasedRecordForPC) {
             Downloader downloader = new Downloader(courseId, savePath);
             downloader.start();
