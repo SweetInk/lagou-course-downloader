@@ -99,12 +99,12 @@ public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
                         Mp4History.append(lessonId);
                         latch.countDown();
                         long count = latch.getCount();
-                        log.info("视频下载完成【{}】,耗时:{} s，剩余{}", videoName, (System.currentTimeMillis() - startTime) / 1000, count);
+                        log.info("====>视频下载完成【{}】,耗时:{} s，剩余{}", videoName, (System.currentTimeMillis() - startTime) / 1000, count);
                     }
                 });
 
             } else {
-                log.info("没有获取到视频【{}】播放地址:", videoName);
+                log.warn("没有获取到视频【{}】播放地址:", videoName);
                 latch.countDown();
             }
         } catch (Exception e) {

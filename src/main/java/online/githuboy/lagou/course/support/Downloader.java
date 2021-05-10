@@ -47,7 +47,7 @@ public class Downloader {
     private final String courseUrl;
 
     private CountDownLatch latch;
-    private final List<LessonInfo> lessonInfoList = new ArrayList<>();
+    //    private final List<LessonInfo> lessonInfoList = new ArrayList<>();
     private volatile List<MediaLoader> mediaLoaders;
 
     private long start;
@@ -64,13 +64,17 @@ public class Downloader {
         if (i1.size() > 0) {
             int i = parseVideoInfo(i1);
             if (i > 0) {
-                downloadMedia();
+                downloadMedia(i);
             } else {
                 log.info("===>所有课程都下载完成了");
             }
         }
     }
 
+    /**
+     * @return
+     * @throws IOException
+     */
     private List<LessonInfo> parseLessonInfo2() throws IOException {
         List<LessonInfo> lessonInfoList = new ArrayList<>();
 
@@ -119,6 +123,8 @@ public class Downloader {
                 LessonInfo lessonInfo = LessonInfo.builder().lessonId(lessonId).lessonName(lessonName).fileId(fileId).appId(appId).fileEdk(fileEdk).fileUrl(fileUrl).build();
                 if (!Mp4History.contains(lessonInfo.getLessonId())) {
                     lessonInfoList.add(lessonInfo);
+                } else {
+                    log.info("课程【{}】已经下载过了", lessonInfo.getLessonName());
                 }
                 log.debug("解析到课程信息：【{}】,appId:{},fileId:{}", lessonName, appId, fileId);
             }
@@ -147,14 +153,18 @@ public class Downloader {
         return videoSize.intValue();
     }
 
-    private void downloadMedia() throws InterruptedException {
+    /**
+     * @param i 需要下载的视频数量
+     * @throws InterruptedException
+     */
+    private void downloadMedia(int i) throws InterruptedException {
         log.info("等待获取视频信息任务完成...");
         System.out.println(ExecutorService.COUNTER);
         BlockingQueue<Runnable> queue = ExecutorService.getExecutor().getQueue();
         System.out.println(queue.size());
         latch.await();
-        if (mediaLoaders.size() != lessonInfoList.size()) {
-            log.info("视频META信息没有全部下载成功: success:{},total:{}", mediaLoaders.size(), lessonInfoList.size());
+        if (mediaLoaders.size() != i) {
+            log.info("视频META信息没有全部下载成功: success:{},total:{}", mediaLoaders.size(), i);
             tryTerminal();
             return;
         }
@@ -169,11 +179,19 @@ public class Downloader {
         long end = System.currentTimeMillis();
         log.info("所有视频处理耗时:{} s", (end - start) / 1000);
         log.info("视频输出目录:{}", this.basePath.getAbsolutePath());
-        System.out.println("\n\n失败统计信息\n\n");
-        Stats.failedCount.forEach((key, value) -> System.out.println(key + " -> " + value.get()));
-        tryTerminal();
+
+        if (!Stats.isEmpty()) {
+            log.info("\n\n失败统计信息\n\n");
+            Stats.failedCount.forEach((key, value) -> System.out.println(key + " -> " + value.get()));
+        }
+//        tryTerminal();
     }
 
+    /**
+     * 主动退出程序
+     *
+     * @throws InterruptedException
+     */
     private void tryTerminal() throws InterruptedException {
         log.info("程序将在{}s后退出", 5);
         ExecutorService.getExecutor().shutdown();
