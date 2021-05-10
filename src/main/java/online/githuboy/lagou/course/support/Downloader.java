@@ -90,12 +90,12 @@ public class Downloader {
         String courseName = jsonObject.getString("courseName");
         JSONArray courseSections = jsonObject.getJSONArray("courseSectionList");
         this.basePath = new File(savePath, this.courseId + "_" + courseName);
+        log.info("\n\n\n");
         if (!basePath.exists()) {
             basePath.mkdirs();
             log.info("视频存放文件夹{}", basePath.getAbsolutePath());
         }
 
-        log.info("\n\n\n");
         log.info("====>正在下载《{}》 courseId={}", courseName, this.courseId);
         for (int i = 0; i < courseSections.size(); i++) {
             JSONObject courseSection = courseSections.getJSONObject(i);
@@ -178,7 +178,7 @@ public class Downloader {
         all.await();
         long end = System.currentTimeMillis();
         log.info("所有视频处理耗时:{} s", (end - start) / 1000);
-        log.info("视频输出目录:{}", this.basePath.getAbsolutePath());
+        log.info("视频输出目录:{}\n\n", this.basePath.getAbsolutePath());
         File file = new File(basePath, "下载完成.txt");
         try {
             file.createNewFile();
