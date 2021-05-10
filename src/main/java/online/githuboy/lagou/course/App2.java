@@ -12,8 +12,8 @@ import java.util.List;
  * 启动类
  * 批量下载，下载账号下所有视频
  *
- * @author suchu
- * @date 2020/12/11
+ * @author eric
+ * @date 2021/05/09
  */
 @Slf4j
 public class App2 {

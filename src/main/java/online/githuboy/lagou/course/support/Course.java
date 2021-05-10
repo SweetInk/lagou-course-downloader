@@ -11,6 +11,7 @@ import java.util.List;
 
 /**
  * @author eric
+ * @date 2021/05/09
  */
 public class Course {
     private static final Logger log = LoggerFactory.getLogger(Course.class);
@@ -44,6 +45,7 @@ public class Course {
                     String name = jsonObject1.getString("name");
                     String id = jsonObject1.getString("id");
                     String updateProgress = jsonObject1.getString("updateProgress");
+                    // 打印所有课程信息，用户依据视频id来下载或者排除
                     log.info("《{}》\t id={}\t {}", name, id, updateProgress);
                     courseIds.add(id);
                 }
