@@ -12,14 +12,13 @@ import java.io.IOException;
 /**
  * 启动类
  *
+ *
  * @author suchu
  * @date 2020/12/11
  */
 @Slf4j
 public class App {
     public static void main(String[] args) throws IOException, InterruptedException {
-
-        Mp4History.loadHistory();
 
         try {
             int status = CmdExecutor.executeCmd(new File("."), "ffmpeg", "-version");
@@ -47,5 +46,7 @@ public class App {
         logThread.setDaemon(true);
 //        logThread.start();
         downloader.start();
+        ExecutorService.tryTerminal();
+
     }
 }

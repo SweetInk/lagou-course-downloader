@@ -37,18 +37,6 @@ public class App2 {
         //视频保存的目录
         String savePath = "D:\\lagou";
 
-//        Thread logThread = new Thread(() -> {
-//            while (true) {
-//                log.info("Thread pool:{}", ExecutorService.getExecutor());
-//                try {
-//                    Thread.sleep(1000);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//
-//        }, "log-thread");
-//        logThread.setDaemon(true);
 
         for (String courseId : allCoursePurchasedRecordForPC) {
             Downloader downloader = new Downloader(courseId, savePath);
@@ -57,6 +45,5 @@ public class App2 {
         log.info("\n====>程序运行完成");
         ExecutorService.tryTerminal();
 
-//        logThread.start();
     }
 }
