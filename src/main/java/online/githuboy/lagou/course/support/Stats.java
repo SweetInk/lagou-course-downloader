@@ -20,4 +20,8 @@ public class Stats {
     public static void remove(String key) {
         failedCount.remove(key);
     }
+
+    public static boolean isEmpty(){
+        return failedCount.isEmpty();
+    }
 }

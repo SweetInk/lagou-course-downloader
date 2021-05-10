@@ -61,7 +61,8 @@ public class VideoInfoLoader implements Runnable, NamedTask {
             log.info("获取视频信息URL:【{}】url：{}", lessonId, url);
             String videoJson = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
             JSONObject json = JSON.parseObject(videoJson);
-            if (json.getInteger("state") != 1) {
+            Integer state = json.getInteger("state");
+            if (state != null && state != 1) {
                 log.info("获取视频视频信息失败:【{}】,json：{}", videoName, videoJson);
                 throw new RuntimeException("获取视频信息失败:" + json.getString("message"));
             }
@@ -77,7 +78,10 @@ public class VideoInfoLoader implements Runnable, NamedTask {
             if (videoMedia != null) {
                 //JSONObject o = transcodeList.getJSONObject(transcodeList.size() - 1);
                 String m3u8Url = videoMedia.getString("fileUrl");
-                log.info("获取视频:【{}】m3u8播放地址成功:{}", videoName, m3u8Url);
+                if (m3u8Url != null) {
+                    log.info("获取视频:【{}】m3u8播放地址成功:{}", videoName, m3u8Url);
+                }
+
                 if ("m3u8".equals(mediaType)) {
                     M3U8MediaLoader m3U8 = new M3U8MediaLoader(m3u8Url, videoName, basePath.getAbsolutePath(), fileId);
                     m3U8.setUrl2(fileUrl);
@@ -99,7 +103,7 @@ public class VideoInfoLoader implements Runnable, NamedTask {
                 try {
                     Thread.sleep(200);
                 } catch (InterruptedException e1) {
-                    e1.printStackTrace();
+                    log.error("", e1);
                 }
                 ExecutorService.execute(this);
             } else {

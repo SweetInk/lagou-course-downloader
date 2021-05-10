@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <configuration>
     <property name="logName" value="lagou-course-downloader"/>
+
+    <!-- 控制台输出 -->
     <appender name="consoleLog" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>[%-5p] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] [%c] - %m%n</pattern>
+            <!--            <pattern>%d{YY-MM-dd HH:mm:ss.SSS} id:[%X{sessionTokenId}] %-5level %logger{32}[%line] - %msg %n</pattern>-->
+            <pattern>%d{HH:mm:ss.SSS} %contextName [%thread] %highlight(%-5level) %yellow(at %class.%method) \(%file:%line\) - %msg%n
+            </pattern>
         </encoder>
     </appender>
     <appender name="fileInfoLog" class="ch.qos.logback.core.rolling.RollingFileAppender">

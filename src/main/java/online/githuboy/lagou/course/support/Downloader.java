@@ -14,8 +14,12 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static online.githuboy.lagou.course.support.ExecutorService.COUNTER;
 
 /**
  * 下载器
@@ -43,7 +47,7 @@ public class Downloader {
     private final String courseUrl;
 
     private CountDownLatch latch;
-    private final List<LessonInfo> lessonInfoList = new ArrayList<>();
+    //    private final List<LessonInfo> lessonInfoList = new ArrayList<>();
     private volatile List<MediaLoader> mediaLoaders;
 
     private long start;
@@ -56,13 +60,24 @@ public class Downloader {
 
     public void start() throws IOException, InterruptedException {
         start = System.currentTimeMillis();
-        parseLessonInfo2();
-        parseVideoInfo();
-        downloadMedia();
-
+        List<LessonInfo> i1 = parseLessonInfo2();
+        if (i1.size() > 0) {
+            int i = parseVideoInfo(i1);
+            if (i > 0) {
+                downloadMedia(i);
+            } else {
+                log.info("===>所有课程都下载完成了");
+            }
+        }
     }
 
-    private void parseLessonInfo2() throws IOException {
+    /**
+     * @return
+     * @throws IOException
+     */
+    private List<LessonInfo> parseLessonInfo2() throws IOException {
+        List<LessonInfo> lessonInfoList = new ArrayList<>();
+
         String strContent = HttpUtils
                 .get(courseUrl, CookieStore.getCookie())
                 .header("x-l-req-header", " {deviceType:1}")
@@ -77,7 +92,11 @@ public class Downloader {
         this.basePath = new File(savePath, this.courseId + "_" + courseName);
         if (!basePath.exists()) {
             basePath.mkdirs();
+            log.info("视频存放文件夹{}", basePath.getAbsolutePath());
         }
+
+        log.info("\n\n\n");
+        log.info("====>正在下载《{}》 courseId={}", courseName, this.courseId);
         for (int i = 0; i < courseSections.size(); i++) {
             JSONObject courseSection = courseSections.getJSONObject(i);
             JSONArray courseLessons = courseSection.getJSONArray("courseLessons");
@@ -102,31 +121,51 @@ public class Downloader {
                 }
                 String appId = lesson.getString("appId");
                 LessonInfo lessonInfo = LessonInfo.builder().lessonId(lessonId).lessonName(lessonName).fileId(fileId).appId(appId).fileEdk(fileEdk).fileUrl(fileUrl).build();
-                lessonInfoList.add(lessonInfo);
-                log.info("解析到课程信息：【{}】,appId:{},fileId:{}", lessonName, appId, fileId);
+                if (!Mp4History.contains(lessonInfo.getLessonId())) {
+                    lessonInfoList.add(lessonInfo);
+                } else {
+                    log.info("课程【{}】已经下载过了", lessonInfo.getLessonName());
+                }
+                log.debug("解析到课程信息：【{}】,appId:{},fileId:{}", lessonName, appId, fileId);
             }
         }
-        System.out.println(1);
+        return lessonInfoList;
     }
 
-    private void parseVideoInfo() {
+    private int parseVideoInfo(List<LessonInfo> lessonInfoList) {
+        AtomicInteger videoSize = new AtomicInteger();
         latch = new CountDownLatch(lessonInfoList.size());
         mediaLoaders = new Vector<>();
         lessonInfoList.forEach(lessonInfo -> {
-            VideoInfoLoader loader = new VideoInfoLoader(lessonInfo.getLessonName(), lessonInfo.getAppId(), lessonInfo.getFileId(), lessonInfo.getFileUrl(), lessonInfo.getLessonId());
-            loader.setM3U8MediaLoaders(mediaLoaders);
-            loader.setBasePath(this.basePath);
-            loader.setLatch(latch);
-            ExecutorService.execute(loader);
+            if (!Mp4History.contains(lessonInfo.getLessonId())) {
+                videoSize.getAndIncrement();
+                VideoInfoLoader loader = new VideoInfoLoader(lessonInfo.getLessonName(), lessonInfo.getAppId(), lessonInfo.getFileId(), lessonInfo.getFileUrl(), lessonInfo.getLessonId());
+                loader.setM3U8MediaLoaders(mediaLoaders);
+                loader.setBasePath(this.basePath);
+                loader.setLatch(latch);
+                ExecutorService.execute(loader);
+            } else {
+                log.info("课程【{}】已经下载过了", lessonInfo.getLessonName());
+                latch.countDown();
+                COUNTER.incrementAndGet();
+            }
         });
+        return videoSize.intValue();
     }
 
-    private void downloadMedia() throws InterruptedException {
+    /**
+     * @param i 需要下载的视频数量
+     * @throws InterruptedException
+     */
+    private void downloadMedia(int i) throws InterruptedException {
         log.info("等待获取视频信息任务完成...");
+        System.out.println(ExecutorService.COUNTER);
+        BlockingQueue<Runnable> queue = ExecutorService.getExecutor().getQueue();
+        System.out.println(queue.size());
         latch.await();
-        if (mediaLoaders.size() != lessonInfoList.size()) {
-            log.info("视频META信息没有全部下载成功: success:{},total:{}", mediaLoaders.size(), lessonInfoList.size());
-            tryTerminal();
+        if (mediaLoaders.size() != i) {
+            log.info("视频META信息没有全部下载成功: success:{},total:{}", mediaLoaders.size(), i);
+            ExecutorService.tryTerminal();
             return;
         }
         log.info("所有视频META信息获取成功 total：{}", mediaLoaders.size());
@@ -140,17 +179,19 @@ public class Downloader {
         long end = System.currentTimeMillis();
         log.info("所有视频处理耗时:{} s", (end - start) / 1000);
         log.info("视频输出目录:{}", this.basePath.getAbsolutePath());
-        System.out.println("\n\n失败统计信息\n\n");
-        Stats.failedCount.forEach((key, value) -> System.out.println(key + " -> " + value.get()));
-        tryTerminal();
+        File file = new File(basePath, "下载完成.txt");
+        try {
+            file.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        if (!Stats.isEmpty()) {
+            log.info("\n\n失败统计信息\n\n");
+            Stats.failedCount.forEach((key, value) -> System.out.println(key + " -> " + value.get()));
+        }
+//        tryTerminal();
     }
 
-    private void tryTerminal() throws InterruptedException {
-        log.info("程序将在{}s后退出", 5);
-        ExecutorService.getExecutor().shutdown();
-        ExecutorService.getHlsExecutor().shutdown();
-        ExecutorService.getHlsExecutor().awaitTermination(5, TimeUnit.SECONDS);
-        ExecutorService.getExecutor().awaitTermination(5, TimeUnit.SECONDS);
-    }
 
 }
