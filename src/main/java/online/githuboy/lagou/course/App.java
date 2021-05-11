@@ -27,7 +27,7 @@ public class App {
             // return;
         }
         //拉钩课程ID
-        String courseId = "555";
+        String courseId = "1";
         //视频保存的目录
 //        String savePath = "D:\\lagou";
         String savePath = "D:\\lili";

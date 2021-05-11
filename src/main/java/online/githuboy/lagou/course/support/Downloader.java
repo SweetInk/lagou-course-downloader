@@ -71,14 +71,9 @@ public class Downloader {
         start = System.currentTimeMillis();
         List<LessonInfo> i1 = parseLessonInfo2();
         if (i1.size() > 0) {
-            int i = parseVideoInfo(i1);
+            int i = parseVideoInfo(i1, this.downloadType);
             if (i > 0) {
-                if(this.downloadType==DownloadType.ALL || this.downloadType==DownloadType.VIDEO){
                     downloadMedia(i);
-                }
-                if(this.downloadType==DownloadType.ALL || this.downloadType==DownloadType.TEXT){
-
-                }
             } else {
                 log.info("===>所有课程都下载完成了");
             }
@@ -146,14 +141,14 @@ public class Downloader {
         return lessonInfoList;
     }
 
-    private int parseVideoInfo(List<LessonInfo> lessonInfoList) {
+    private int parseVideoInfo(List<LessonInfo> lessonInfoList, DownloadType downloadType) {
         AtomicInteger videoSize = new AtomicInteger();
         latch = new CountDownLatch(lessonInfoList.size());
         mediaLoaders = new Vector<>();
         lessonInfoList.forEach(lessonInfo -> {
             if (!Mp4History.contains(lessonInfo.getLessonId())) {
                 videoSize.getAndIncrement();
-                VideoInfoLoader loader = new VideoInfoLoader(lessonInfo.getLessonName(), lessonInfo.getAppId(), lessonInfo.getFileId(), lessonInfo.getFileUrl(), lessonInfo.getLessonId());
+                VideoInfoLoader loader = new VideoInfoLoader(lessonInfo.getLessonName(), lessonInfo.getAppId(), lessonInfo.getFileId(), lessonInfo.getFileUrl(), lessonInfo.getLessonId(), downloadType);
                 loader.setM3U8MediaLoaders(mediaLoaders);
                 loader.setBasePath(this.basePath);
                 loader.setLatch(latch);

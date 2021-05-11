@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.support.CookieStore;
 import online.githuboy.lagou.course.support.ExecutorService;
 import online.githuboy.lagou.course.support.MediaLoader;
+import online.githuboy.lagou.course.utils.DownloadType;
 import online.githuboy.lagou.course.utils.HttpUtils;
 
 import java.io.File;
@@ -46,6 +47,8 @@ public class VideoInfoLoader implements Runnable, NamedTask {
     @Setter
     private CountDownLatch latch;
 
+    private DownloadType downloadType = DownloadType.VIDEO;
+
     public VideoInfoLoader(String videoName, String appId, String fileId, String fileUrl, String lessonId) {
         this.videoName = videoName;
         this.appId = appId;
@@ -54,63 +57,78 @@ public class VideoInfoLoader implements Runnable, NamedTask {
         this.lessonId = lessonId;
     }
 
+    public VideoInfoLoader(String videoName, String appId, String fileId, String fileUrl, String lessonId, DownloadType downloadType) {
+        this.videoName = videoName;
+        this.appId = appId;
+        this.fileId = fileId;
+        this.fileUrl = fileUrl;
+        this.lessonId = lessonId;
+        this.downloadType = downloadType;
+    }
+
     @Override
     public void run() {
         String url = MessageFormat.format(API_TEMPLATE, this.lessonId);
-        try {
-            log.info("获取视频信息URL:【{}】url：{}", lessonId, url);
-            String videoJson = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
-            JSONObject json = JSON.parseObject(videoJson);
-            Integer state = json.getInteger("state");
-            if (state != null && state != 1) {
-                log.info("获取视频视频信息失败:【{}】,json：{}", videoName, videoJson);
-                throw new RuntimeException("获取视频信息失败:" + json.getString("message"));
-            }
-            JSONObject result = json.getJSONObject("content");
-            JSONObject videoMedia = result.getJSONObject("videoMedia");
-            String status = result.getString("status");
-            if ("UNRELEASE".equals(status)) {
-                log.info("视频:【{}】待更新", videoName);
-                latch.countDown();
-                COUNTER.incrementAndGet();
-                return;
-            }
-            if (videoMedia != null) {
-                String m3u8Url = videoMedia.getString("fileUrl");
-                if (m3u8Url != null) {
-                    log.info("获取视频:【{}】m3u8播放地址成功:{}", videoName, m3u8Url);
-                }
+        log.info("获取视频信息URL:【{}】url：{}", lessonId, url);
+        String videoJson = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
+        JSONObject json = JSON.parseObject(videoJson);
+        Integer state = json.getInteger("state");
+        if (state != null && state != 1) {
+            log.info("获取视频视频信息失败:【{}】,json：{}", videoName, videoJson);
+            throw new RuntimeException("获取视频信息失败:" + json.getString("message"));
+        }
+        JSONObject result = json.getJSONObject("content");
+        JSONObject videoMedia = result.getJSONObject("videoMedia");
+        String status = result.getString("status");
+        if ("UNRELEASE".equals(status)) {
+            log.info("视频:【{}】待更新", videoName);
+            latch.countDown();
+            COUNTER.incrementAndGet();
+            return;
+        }
+        if(this.downloadType==DownloadType.ALL || this.downloadType==DownloadType.VIDEO){
+            try {
+                if (videoMedia != null) {
+                    String m3u8Url = videoMedia.getString("fileUrl");
+                    if (m3u8Url != null) {
+                        log.info("获取视频:【{}】m3u8播放地址成功:{}", videoName, m3u8Url);
+                    }
 
-                if ("m3u8".equals(mediaType)) {
-                    M3U8MediaLoader m3U8 = new M3U8MediaLoader(m3u8Url, videoName, basePath.getAbsolutePath(), fileId);
-                    m3U8.setUrl2(fileUrl);
-                    m3U8MediaLoaders.add(m3U8);
-                    // ExecutorService.execute(m3U8);
-                } else if ("mp4".equals(mediaType)) {
-                    MP4Downloader mp4Downloader = MP4Downloader.builder().appId(appId).basePath(basePath.getAbsoluteFile()).videoName(videoName).fileId(fileId).lessonId(lessonId).build();
-                    m3U8MediaLoaders.add(mp4Downloader);
-                    // ExecutorService.execute(mp4Downloader);
+                    if ("m3u8".equals(mediaType)) {
+                        M3U8MediaLoader m3U8 = new M3U8MediaLoader(m3u8Url, videoName, basePath.getAbsolutePath(), fileId);
+                        m3U8.setUrl2(fileUrl);
+                        m3U8MediaLoaders.add(m3U8);
+                        // ExecutorService.execute(m3U8);
+                    } else if ("mp4".equals(mediaType)) {
+                        MP4Downloader mp4Downloader = MP4Downloader.builder().appId(appId).basePath(basePath.getAbsoluteFile()).videoName(videoName).fileId(fileId).lessonId(lessonId).build();
+                        m3U8MediaLoaders.add(mp4Downloader);
+                        // ExecutorService.execute(mp4Downloader);
+                    }
                 }
-                latch.countDown();
-                COUNTER.incrementAndGet();
-            }
-        } catch (Exception e) {
-            log.error("获取视频:【{}】信息失败:", videoName, e);
-            if (retryCount < maxRetryCount) {
-                retryCount += 1;
-                log.info("第:{}次重试获取:{}", retryCount, videoName);
-                try {
-                    Thread.sleep(200);
-                } catch (InterruptedException e1) {
-                    log.error("", e1);
+            } catch (Exception e) {
+                log.error("获取视频:【{}】信息失败:", videoName, e);
+                if (retryCount < maxRetryCount) {
+                    retryCount += 1;
+                    log.info("第:{}次重试获取:{}", retryCount, videoName);
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e1) {
+                        log.error("", e1);
+                    }
+                    ExecutorService.execute(this);
+                } else {
+                    log.info(" video:【{}】最大重试结束:{}", videoName, maxRetryCount);
                 }
-                ExecutorService.execute(this);
-            } else {
-                log.info(" video:【{}】最大重试结束:{}", videoName, maxRetryCount);
-                COUNTER.incrementAndGet();
-                latch.countDown();
             }
         }
+        if(this.downloadType==DownloadType.ALL || this.downloadType==DownloadType.VIDEO){
+            String textContent = result.getString("textContent");
+            if(textContent!=null){
+
+            }
+        }
+        COUNTER.incrementAndGet();
+        latch.countDown();
     }
 
     @Override
