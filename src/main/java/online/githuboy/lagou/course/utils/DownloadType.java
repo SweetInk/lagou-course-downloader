@@ -7,7 +7,7 @@ package online.githuboy.lagou.course.utils;
 
 public enum DownloadType {
     VIDEO(0,"video"),
-    TEXT(1,"text"),
+//    TEXT(1,"text"),
     ALL(3,"video and ");
 
     int code;

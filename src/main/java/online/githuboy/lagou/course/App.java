@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.support.CmdExecutor;
 import online.githuboy.lagou.course.support.Downloader;
 import online.githuboy.lagou.course.support.ExecutorService;
+import online.githuboy.lagou.course.utils.DownloadType;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,8 +31,8 @@ public class App {
         String courseId = "1";
         //视频保存的目录
 //        String savePath = "D:\\lagou";
-        String savePath = "D:\\lili";
-        Downloader downloader = new Downloader(courseId, savePath);
+        String savePath = "course";
+        Downloader downloader = new Downloader(courseId, savePath, DownloadType.ALL);
         Thread logThread = new Thread(() -> {
             while (true) {
                 log.info("Thread pool:{}", ExecutorService.getExecutor());

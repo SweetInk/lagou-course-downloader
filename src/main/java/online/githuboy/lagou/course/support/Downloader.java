@@ -44,6 +44,9 @@ public class Downloader {
 
     private File basePath;
 
+    private File textPath;
+
+
     private final String courseUrl;
 
     private CountDownLatch latch;
@@ -105,6 +108,12 @@ public class Downloader {
             log.info("视频存放文件夹{}", basePath.getAbsolutePath());
         }
 
+        this.textPath = new File(this.basePath, "文档");
+        if (!textPath.exists()) {
+            textPath.mkdirs();
+            log.info("文档存放文件夹{}", textPath.getAbsolutePath());
+        }
+
         log.info("====>正在下载《{}》 courseId={}", courseName, this.courseId);
         for (int i = 0; i < courseSections.size(); i++) {
             JSONObject courseSection = courseSections.getJSONObject(i);
@@ -151,6 +160,7 @@ public class Downloader {
                 VideoInfoLoader loader = new VideoInfoLoader(lessonInfo.getLessonName(), lessonInfo.getAppId(), lessonInfo.getFileId(), lessonInfo.getFileUrl(), lessonInfo.getLessonId(), downloadType);
                 loader.setM3U8MediaLoaders(mediaLoaders);
                 loader.setBasePath(this.basePath);
+                loader.setTextPath(this.textPath);
                 loader.setLatch(latch);
                 ExecutorService.execute(loader);
             } else {
