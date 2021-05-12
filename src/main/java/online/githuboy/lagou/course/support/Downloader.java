@@ -8,6 +8,7 @@ import online.githuboy.lagou.course.domain.LessonInfo;
 import online.githuboy.lagou.course.task.VideoInfoLoader;
 import online.githuboy.lagou.course.utils.DownloadType;
 import online.githuboy.lagou.course.utils.HttpUtils;
+import online.githuboy.lagou.course.utils.ReadTxt;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +16,6 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -36,6 +36,11 @@ public class Downloader {
      */
     @Getter
     private final String courseId;
+
+    /**
+     * 课程名字
+     */
+    private String courseName;
     /**
      * 视频保存路径
      */
@@ -76,7 +81,7 @@ public class Downloader {
         if (i1.size() > 0) {
             int i = parseVideoInfo(i1, this.downloadType);
             if (i > 0) {
-                    downloadMedia(i);
+                downloadMedia(i);
             } else {
                 log.info("===>所有课程都下载完成了");
             }
@@ -99,7 +104,7 @@ public class Downloader {
             throw new RuntimeException("访问课程信息出错:" + strContent);
         }
         jsonObject = jsonObject.getJSONObject("content");
-        String courseName = jsonObject.getString("courseName");
+        courseName = jsonObject.getString("courseName");
         JSONArray courseSections = jsonObject.getJSONArray("courseSectionList");
         this.basePath = new File(savePath, this.courseId + "_" + courseName);
         log.info("\n\n\n");
@@ -158,7 +163,7 @@ public class Downloader {
             if (!Mp4History.contains(lessonInfo.getLessonId())) {
                 videoSize.getAndIncrement();
                 VideoInfoLoader loader = new VideoInfoLoader(lessonInfo.getLessonName(), lessonInfo.getAppId(), lessonInfo.getFileId(), lessonInfo.getFileUrl(), lessonInfo.getLessonId(), downloadType);
-                loader.setM3U8MediaLoaders(mediaLoaders);
+                loader.setMediaLoaders(mediaLoaders);
                 loader.setBasePath(this.basePath);
                 loader.setTextPath(this.textPath);
                 loader.setLatch(latch);
@@ -177,17 +182,23 @@ public class Downloader {
      * @throws InterruptedException
      */
     private void downloadMedia(int i) throws InterruptedException {
-        log.info("等待获取视频信息任务完成...");
+        log.info("等待《{}》获取视频信息任务完成...", courseName);
         System.out.println(ExecutorService.COUNTER);
-        BlockingQueue<Runnable> queue = ExecutorService.getExecutor().getQueue();
-        System.out.println(queue.size());
         latch.await();
         if (mediaLoaders.size() != i) {
-            log.info("视频META信息没有全部下载成功: success:{},total:{}", mediaLoaders.size(), i);
-            ExecutorService.tryTerminal();
+            String message = String.format("《{}》视频META信息没有全部下载成功: success:%s,total:%s", courseName, mediaLoaders.size(), i);
+            log.error("{}", message);
+//            ExecutorService.tryTerminal
+            File file = new File(basePath, "下载失败.txt");
+            ReadTxt readTxt = new ReadTxt();
+            readTxt.writeFile(file.getAbsolutePath(), message);
+
+//            for (MediaLoader mediaLoader:mediaLoaders){
+//                ReadTxt.writeFile(file.getAbsolutePath(),mediaLoader.);
+//            }
             return;
         }
-        log.info("所有视频META信息获取成功 total：{}", mediaLoaders.size());
+        log.info("《{}》所有视频META信息获取成功 total：{}", courseName, mediaLoaders.size());
         CountDownLatch all = new CountDownLatch(mediaLoaders.size());
 
         for (MediaLoader loader : mediaLoaders) {
@@ -196,8 +207,8 @@ public class Downloader {
         }
         all.await();
         long end = System.currentTimeMillis();
-        log.info("所有视频处理耗时:{} s", (end - start) / 1000);
-        log.info("视频输出目录:{}\n\n", this.basePath.getAbsolutePath());
+        log.info("《{}》所有视频处理耗时:{} s", courseName, (end - start) / 1000);
+        log.info("《{}》视频输出目录:{}\n\n", courseName, this.basePath.getAbsolutePath());
         File file = new File(basePath, "下载完成.txt");
         try {
             file.createNewFile();

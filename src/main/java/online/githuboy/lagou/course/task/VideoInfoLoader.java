@@ -45,7 +45,7 @@ public class VideoInfoLoader implements Runnable, NamedTask {
     @Setter
     private String mediaType = "mp4";
     @Setter
-    private List<MediaLoader> m3U8MediaLoaders;
+    private List<MediaLoader> mediaLoaders;
 
     @Setter
     private CountDownLatch latch;
@@ -99,11 +99,11 @@ public class VideoInfoLoader implements Runnable, NamedTask {
                 if ("m3u8".equals(mediaType)) {
                     M3U8MediaLoader m3U8 = new M3U8MediaLoader(m3u8Url, videoName, basePath.getAbsolutePath(), fileId);
                     m3U8.setUrl2(fileUrl);
-                    m3U8MediaLoaders.add(m3U8);
+                    mediaLoaders.add(m3U8);
                     // ExecutorService.execute(m3U8);
                 } else if ("mp4".equals(mediaType)) {
                     MP4Downloader mp4Downloader = MP4Downloader.builder().appId(appId).basePath(basePath.getAbsoluteFile()).videoName(videoName).fileId(fileId).lessonId(lessonId).build();
-                    m3U8MediaLoaders.add(mp4Downloader);
+                    mediaLoaders.add(mp4Downloader);
                     // ExecutorService.execute(mp4Downloader);
                 }
             }
@@ -125,7 +125,7 @@ public class VideoInfoLoader implements Runnable, NamedTask {
         if(this.downloadType==DownloadType.ALL){
             String textContent = result.getString("textContent");
             if(textContent!=null){
-                String textFileName = FileUtils.getCorrectFileName(videoName) + ".html";
+                String textFileName = FileUtils.getCorrectFileName(videoName) + ".md";
                 FileUtils.writeFile(textPath,textFileName,textContent);
             }
         }
