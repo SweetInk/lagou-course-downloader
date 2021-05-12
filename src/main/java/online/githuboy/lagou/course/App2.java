@@ -43,6 +43,8 @@ public class App2 {
         for (String courseId : allCoursePurchasedRecordForPC) {
             Downloader downloader = new Downloader(courseId, savePath, DownloadType.ALL);
             downloader.start();
+            log.info("开始下载下一个课程");
+            Thread.sleep(5000);
         }
         log.info("\n====>程序运行完成");
         ExecutorService.tryTerminal();
