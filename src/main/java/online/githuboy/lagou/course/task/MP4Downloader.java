@@ -17,7 +17,6 @@ import online.githuboy.lagou.course.utils.FileUtils;
 import online.githuboy.lagou.course.utils.HttpUtils;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.concurrent.CountDownLatch;
 
