@@ -186,7 +186,7 @@ public class Downloader {
         System.out.println(ExecutorService.COUNTER);
         latch.await();
         if (mediaLoaders.size() != i) {
-            String message = String.format("《{}》视频META信息没有全部下载成功: success:%s,total:%s", courseName, mediaLoaders.size(), i);
+            String message = String.format("《%s》视频META信息没有全部下载成功: success:%s,total:%s", courseName, mediaLoaders.size(), i);
             log.error("{}", message);
 //            ExecutorService.tryTerminal
             File file = new File(basePath, "下载失败.txt");

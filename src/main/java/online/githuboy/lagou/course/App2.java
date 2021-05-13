@@ -40,11 +40,12 @@ public class App2 {
         String savePath = "/media/eric/File-Old/lagou";
 
         // 开始下载所有课程
+        int i =1;
         for (String courseId : allCoursePurchasedRecordForPC) {
             Downloader downloader = new Downloader(courseId, savePath, DownloadType.ALL);
             downloader.start();
-            log.info("开始下载下一个课程");
-            Thread.sleep(5000);
+            log.info("开始下载{}课程",i++);
+//            Thread.sleep(5000);
         }
         log.info("\n====>程序运行完成");
         ExecutorService.tryTerminal();
