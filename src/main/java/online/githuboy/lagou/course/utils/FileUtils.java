@@ -2,7 +2,9 @@ package online.githuboy.lagou.course.utils;
 
 import cn.hutool.core.io.FileUtil;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 
 public class FileUtils {
@@ -26,6 +28,27 @@ public class FileUtils {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    public static void writeFile(File workdir, String pathname, String text) {
+        try {
+            File writeName = new File(workdir,pathname);
+            if(!writeName.exists()){
+                try {
+                    writeName.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            try (
+                    FileWriter writer = new FileWriter(writeName, true);
+                    BufferedWriter out = new BufferedWriter(writer)
+            ) {
+                out.write(text);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
