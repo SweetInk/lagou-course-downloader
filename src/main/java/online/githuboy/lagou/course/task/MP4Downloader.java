@@ -62,7 +62,7 @@ public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
         initDir();
         String url = MessageFormat.format(API_TEMPLATE, this.lessonId);
         try {
-            log.info("获取课程:{}信息，url：{}", lessonId, url);
+            log.debug("获取课程:{}信息，url：{}", lessonId, url);
             String body = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
             JSONObject jsonObject = JSON.parseObject(body);
             if (jsonObject.getInteger("state") != 1) throw new RuntimeException("获取课程信息失败:" + body);
