@@ -109,6 +109,7 @@ public class VideoInfoLoader implements Runnable, NamedTask {
                     // ExecutorService.execute(mp4Downloader);
                 }
             }
+            // 下载文档
             if (this.downloadType == DownloadType.ALL) {
                 String textContent = result.getString("textContent");
                 if (textContent != null) {
@@ -117,7 +118,7 @@ public class VideoInfoLoader implements Runnable, NamedTask {
                 }
             }
         } catch (Exception e) {
-            log.error("获取视频:【{}】信息失败:", videoName, e);
+            log.warn("获取视频:【{}】信息失败:", videoName, e);
             if (retryCount < maxRetryCount) {
                 retryCount += 1;
                 log.info("第:{}次重试获取:{}", retryCount, videoName);
@@ -128,12 +129,11 @@ public class VideoInfoLoader implements Runnable, NamedTask {
                 }
                 ExecutorService.execute(this);
             } else {
-                log.info(" video:【{}】最大重试结束:{}", videoName, maxRetryCount);
+                log.error(" video:【{}】最大重试结束:{}", videoName, maxRetryCount);
+                COUNTER.incrementAndGet();
+                latch.countDown();
             }
         }
-
-        COUNTER.incrementAndGet();
-        latch.countDown();
     }
 
     @Override
