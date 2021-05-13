@@ -117,6 +117,8 @@ public class VideoInfoLoader implements Runnable, NamedTask {
                     FileUtils.writeFile(textPath, textFileName, textContent);
                 }
             }
+            latch.countDown();
+
         } catch (Exception e) {
             log.warn("获取视频:【{}】信息失败:", videoName, e);
             if (retryCount < maxRetryCount) {
