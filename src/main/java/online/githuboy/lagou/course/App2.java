@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.support.Course;
 import online.githuboy.lagou.course.support.Downloader;
 import online.githuboy.lagou.course.support.ExecutorService;
-import online.githuboy.lagou.course.utils.DownloadType;
+import online.githuboy.lagou.course.domain.DownloadType;
 
 import java.io.IOException;
 import java.util.List;
@@ -44,6 +44,7 @@ public class App2 {
         for (String courseId : allCoursePurchasedRecordForPC) {
             Downloader downloader = new Downloader(courseId, savePath, DownloadType.ALL);
             downloader.start();
+            log.info("\n\n\n");
             log.info("开始下载{}课程",i++);
 //            Thread.sleep(5000);
         }

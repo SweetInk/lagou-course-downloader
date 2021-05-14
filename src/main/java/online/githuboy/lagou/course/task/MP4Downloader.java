@@ -116,11 +116,11 @@ public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
                 try {
                     Thread.sleep(200);
                 } catch (InterruptedException e1) {
-                    e1.printStackTrace();
+                    log.error("{}", e);
                 }
                 ExecutorService.execute(this);
             } else {
-                log.info(" video:{}最大重试结束:{}", videoName, maxRetryCount);
+                log.error(" video:{}最大重试结束:{}", videoName, maxRetryCount);
                 latch.countDown();
             }
         }

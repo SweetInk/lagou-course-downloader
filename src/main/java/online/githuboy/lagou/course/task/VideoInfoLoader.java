@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.support.CookieStore;
 import online.githuboy.lagou.course.support.ExecutorService;
 import online.githuboy.lagou.course.support.MediaLoader;
-import online.githuboy.lagou.course.utils.DownloadType;
+import online.githuboy.lagou.course.domain.DownloadType;
 import online.githuboy.lagou.course.utils.FileUtils;
 import online.githuboy.lagou.course.utils.HttpUtils;
 
@@ -44,12 +44,21 @@ public class VideoInfoLoader implements Runnable, NamedTask {
     private File textPath;
     @Setter
     private String mediaType = "mp4";
+    /**
+     * 这个一定要是一个线程安全的容器，否则会有并发问题
+     */
     @Setter
     private List<MediaLoader> mediaLoaders;
 
     @Setter
     private CountDownLatch latch;
 
+    private final String UNRELEASE = "UNRELEASE";
+
+
+    /**
+     * 默认只下载视频
+     */
     private DownloadType downloadType = DownloadType.VIDEO;
 
     public VideoInfoLoader(String videoName, String appId, String fileId, String fileUrl, String lessonId) {
@@ -74,7 +83,7 @@ public class VideoInfoLoader implements Runnable, NamedTask {
 
         try {
             String url = MessageFormat.format(API_TEMPLATE, this.lessonId);
-            log.info("获取视频信息URL:【{}】url：{}", lessonId, url);
+            log.debug("获取视频信息URL:【{}】url：{}", lessonId, url);
             String videoJson = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
             JSONObject json = JSON.parseObject(videoJson);
             Integer state = json.getInteger("state");
@@ -85,7 +94,7 @@ public class VideoInfoLoader implements Runnable, NamedTask {
             JSONObject result = json.getJSONObject("content");
             JSONObject videoMedia = result.getJSONObject("videoMedia");
             String status = result.getString("status");
-            if ("UNRELEASE".equals(status)) {
+            if (UNRELEASE.equals(status)) {
                 log.info("视频:【{}】待更新", videoName);
                 latch.countDown();
                 COUNTER.incrementAndGet();
@@ -108,6 +117,8 @@ public class VideoInfoLoader implements Runnable, NamedTask {
                     mediaLoaders.add(mp4Downloader);
                     // ExecutorService.execute(mp4Downloader);
                 }
+            } else {
+                log.warn("视频信息获取失败{}", videoName);
             }
             // 下载文档
             if (this.downloadType == DownloadType.ALL) {
@@ -117,6 +128,7 @@ public class VideoInfoLoader implements Runnable, NamedTask {
                     FileUtils.writeFile(textPath, textFileName, textContent);
                 }
             }
+            // 不可以移动到finally中调用
             latch.countDown();
 
         } catch (Exception e) {
