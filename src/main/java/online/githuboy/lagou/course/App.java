@@ -4,14 +4,14 @@ import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.support.CmdExecutor;
 import online.githuboy.lagou.course.support.Downloader;
 import online.githuboy.lagou.course.support.ExecutorService;
-import online.githuboy.lagou.course.utils.DownloadType;
+import online.githuboy.lagou.course.domain.DownloadType;
 
 import java.io.File;
 import java.io.IOException;
 
 /**
  * 启动类
- *  下载指定课程
+ * 下载指定课程
  *
  * @author suchu
  * @date 2020/12/11
@@ -39,7 +39,7 @@ public class App {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    log.error("{}", e);
                 }
             }
 
