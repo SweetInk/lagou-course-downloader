@@ -97,10 +97,12 @@ public class Downloader {
     private List<LessonInfo> parseLessonInfo() {
         List<LessonInfo> lessonInfoList = new ArrayList<>();
 
+        // TODO retry
         String strContent = HttpUtils
                 .get(courseUrl, CookieStore.getCookie())
                 .header("x-l-req-header", " {deviceType:1}")
                 .execute().body();
+
         JSONObject jsonObject = JSONObject.parseObject(strContent);
         if (jsonObject.getInteger("state") != 1) {
             throw new RuntimeException("访问课程信息出错:" + strContent);
