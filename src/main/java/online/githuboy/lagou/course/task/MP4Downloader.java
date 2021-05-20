@@ -30,7 +30,7 @@ import static online.githuboy.lagou.course.decrypt.alibaba.AliPlayerDecrypt.getP
  */
 @Builder
 @Slf4j
-public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
+public class MP4Downloader implements NamedTask, MediaLoader {
     private static final String API_TEMPLATE = "https://gate.lagou.com/v1/neirong/kaiwu/getLessonPlayHistory?lessonId={0}&isVideo=true";
 
     private final static int maxRetryCount = 3;

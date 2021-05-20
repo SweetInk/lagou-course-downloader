@@ -37,15 +37,15 @@ public class App2 {
 //        allCoursePurchasedRecordForPC.remove("869"); // 这个视频有毒
 
         //视频保存的目录
-        String savePath = "/media/eric/File-Old/lagou";
+        String savePath = "/media/iris/File-Old/lagou";
 
         // 开始下载所有课程
-        int i =1;
+        int i = 1;
         for (String courseId : allCoursePurchasedRecordForPC) {
             Downloader downloader = new Downloader(courseId, savePath, DownloadType.ALL);
             downloader.start();
             log.info("\n\n\n");
-            log.info("开始下载{}课程",i++);
+            log.info("开始下载{}课程", i++);
 //            Thread.sleep(5000);
         }
         log.info("\n====>程序运行完成");
