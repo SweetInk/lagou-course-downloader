@@ -34,7 +34,6 @@ public class ReadTxt {
             String line;
             while ((line = br.readLine()) != null) {
                 // 一次读入一行数据
-                logger.debug(line);
                 set.add(line);
             }
         } catch (IOException e) {
