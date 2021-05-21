@@ -29,7 +29,7 @@ public class App2 {
 //        allCoursePurchasedRecordForPC.remove("640");
 //        allCoursePurchasedRecordForPC.remove("668");
 //        allCoursePurchasedRecordForPC.remove("685");
-//        allCoursePurchasedRecordForPC.remove("716");
+        allCoursePurchasedRecordForPC.remove("716"); // 716_Python入门与实战-至尊 这个视频有毒
 //        allCoursePurchasedRecordForPC.remove("729");
 //        allCoursePurchasedRecordForPC.remove("753");
 //        allCoursePurchasedRecordForPC.remove("822");
@@ -40,12 +40,12 @@ public class App2 {
         String savePath = "/media/eric/File-Old/lagou";
 
         // 开始下载所有课程
-        int i =1;
+        int i = 1;
         for (String courseId : allCoursePurchasedRecordForPC) {
             Downloader downloader = new Downloader(courseId, savePath, DownloadType.ALL);
             downloader.start();
             log.info("\n\n\n");
-            log.info("开始下载{}课程",i++);
+            log.info("开始下载{}课程", i++);
 //            Thread.sleep(5000);
         }
         log.info("\n====>程序运行完成");
