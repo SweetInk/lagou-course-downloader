@@ -157,7 +157,7 @@ public class Downloader {
                     if (!Mp4History.contains(lessonInfo.getLessonId())) {
                         lessonInfoList.add(lessonInfo);
                     } else {
-                        log.info("课程【{}】已经下载过了", lessonInfo.getLessonName());
+                        log.debug("课程【{}】已经下载过了", lessonInfo.getLessonName());
                     }
                     log.debug("解析到课程信息：【{}】,appId:{},fileId:{}", lessonName, appId, fileId);
                 }

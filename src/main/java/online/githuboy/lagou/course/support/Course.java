@@ -30,8 +30,15 @@ public class Course {
                 .execute().body();
 
         JSONObject jsonObject = JSONObject.parseObject(strContent);
-        if (jsonObject.getInteger("state") != 1) {
-            throw new RuntimeException("获取所有课程信息出错:" + strContent);
+        Integer state = jsonObject.getInteger("state");
+        String message = jsonObject.getString("message");
+        if (state != 1) {
+            if (state == 1004) {
+                String cookie = CookieStore.getCookie();
+                throw new RuntimeException("身份认证失败cookie" + cookie);
+            } else {
+                throw new RuntimeException("获取所有课程信息出错:" + strContent);
+            }
         }
 
         jsonObject = jsonObject.getJSONObject("content");
