@@ -1,7 +1,7 @@
 package online.githuboy.lagou.course.decrypt.alibaba;
 
 import com.alibaba.fastjson.JSONObject;
-import jdk.nashorn.internal.objects.NativeString;
+//import jdk.nashorn.internal.objects.NativeString;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Base64;
 
@@ -33,8 +33,8 @@ public class AliPlayerDecrypt {
             int[] temp = e.word;
             for (int i = 0; i < e.sigBytes; i++) {
                 int n = temp[i >>> 2] >>> 24 - i % 4 * 8 & 255;
-                r.append(NativeString.fromCharCode(r, n));
-//                r.append(Character.toString((char) (n & '\uffff')));
+//                r.append(NativeString.fromCharCode(r, n));
+                r.append(Character.toString((char) (n & '\uffff')));
             }
             return r.toString();
         }
