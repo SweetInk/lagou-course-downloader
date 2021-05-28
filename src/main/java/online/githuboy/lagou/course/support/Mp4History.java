@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * mp4视频下载历史信息记录到文件中
+ *
  * @author eric
  */
 public class Mp4History {
