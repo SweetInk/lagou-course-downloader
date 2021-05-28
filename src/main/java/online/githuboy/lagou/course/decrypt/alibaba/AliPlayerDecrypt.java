@@ -3,7 +3,7 @@ package online.githuboy.lagou.course.decrypt.alibaba;
 import com.alibaba.fastjson.JSONObject;
 import jdk.nashorn.internal.objects.NativeString;
 import lombok.SneakyThrows;
-import sun.misc.BASE64Encoder;
+import org.apache.commons.codec.binary.Base64;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -11,7 +11,14 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.security.SignatureException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.SimpleTimeZone;
+import java.util.UUID;
 
 /**
  * @author suchu
@@ -27,6 +34,7 @@ public class AliPlayerDecrypt {
             for (int i = 0; i < e.sigBytes; i++) {
                 int n = temp[i >>> 2] >>> 24 - i % 4 * 8 & 255;
                 r.append(NativeString.fromCharCode(r, n));
+//                r.append(Character.toString((char) (n & '\uffff')));
             }
             return r.toString();
         }
@@ -197,7 +205,7 @@ public class AliPlayerDecrypt {
         if (bytes == null || bytes.length == 0) {
             return null;
         }
-        return new BASE64Encoder().encode(bytes);
+        return Base64.encodeBase64String(bytes);
     }
 
     /*生成当前UTC时间戳Time*/
