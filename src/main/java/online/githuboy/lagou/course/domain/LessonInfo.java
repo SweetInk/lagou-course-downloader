@@ -3,8 +3,12 @@ package online.githuboy.lagou.course.domain;
 import lombok.Builder;
 import lombok.Data;
 
+/**
+ * 解析后的课程信息
+ *
+ * @author eric
+ */
 @Data
-//@AllArgsConstructor
 @Builder
 public class LessonInfo {
     private String lessonId;

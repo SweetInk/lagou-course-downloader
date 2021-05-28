@@ -75,7 +75,7 @@ public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
             if (mediaObj.getString("Code") != null) throw new RuntimeException("获取媒体信息失败:");
             JSONObject playInfoList = mediaObj.getJSONObject("PlayInfoList");
             JSONArray playInfos = playInfoList.getJSONArray("PlayInfo");
-            if (playInfos.size() > 0) {
+            if (playInfos != null && playInfos.size() > 0) {
                 JSONObject playInfo = playInfos.getJSONObject(0);
                 String mp4Url = playInfo.getString("PlayURL");
                 log.info("解析出【{}】MP4播放地址:{}", videoName, mp4Url);
@@ -116,11 +116,11 @@ public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
                 try {
                     Thread.sleep(200);
                 } catch (InterruptedException e1) {
-                    e1.printStackTrace();
+                    log.error("{}", e);
                 }
                 ExecutorService.execute(this);
             } else {
-                log.info(" video:{}最大重试结束:{}", videoName, maxRetryCount);
+                log.error(" video:{}最大重试结束:{}", videoName, maxRetryCount);
                 latch.countDown();
             }
         }
