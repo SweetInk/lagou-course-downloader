@@ -6,11 +6,17 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * mp4视频下载历史信息记录到文件中
+ *
  * @author eric
  */
 public class Mp4History {
+
     private static volatile Set<String> historySet = new HashSet<>();
 
+    /**
+     * 记录已经下载过的视频id，不要重复下载了。
+     */
     static String filePath = "mp4.txt";
 
     static {

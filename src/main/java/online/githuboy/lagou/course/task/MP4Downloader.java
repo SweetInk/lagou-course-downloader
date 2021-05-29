@@ -17,7 +17,6 @@ import online.githuboy.lagou.course.utils.FileUtils;
 import online.githuboy.lagou.course.utils.HttpUtils;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.concurrent.CountDownLatch;
 
@@ -31,7 +30,7 @@ import static online.githuboy.lagou.course.decrypt.alibaba.AliPlayerDecrypt.getP
  */
 @Builder
 @Slf4j
-public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
+public class MP4Downloader implements NamedTask, MediaLoader {
     private static final String API_TEMPLATE = "https://gate.lagou.com/v1/neirong/kaiwu/getLessonPlayHistory?lessonId={0}&isVideo=true";
 
     private final static int maxRetryCount = 3;
@@ -76,7 +75,7 @@ public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
             if (mediaObj.getString("Code") != null) throw new RuntimeException("获取媒体信息失败:");
             JSONObject playInfoList = mediaObj.getJSONObject("PlayInfoList");
             JSONArray playInfos = playInfoList.getJSONArray("PlayInfo");
-            if (playInfos.size() > 0) {
+            if (playInfos != null && playInfos.size() > 0) {
                 JSONObject playInfo = playInfos.getJSONObject(0);
                 String mp4Url = playInfo.getString("PlayURL");
                 log.info("解析出【{}】MP4播放地址:{}", videoName, mp4Url);
@@ -98,13 +97,9 @@ public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
                     public void finish() {
                         Stats.remove(videoName);
                         Mp4History.append(lessonId);
-                        latch.countDown();
                         long count = latch.getCount();
-                        log.info("====>视频下载完成【{}】,耗时:{} s，剩余{}", videoName, (System.currentTimeMillis() - startTime) / 1000, count);
-//                        TODO 最后一个文件下载完成后，在文件夹里面加上一个下载完成的txt文件备注。这样方便对下载完成的文件进行处理
-                        if (count == 0) {
-
-                        }
+                        log.info("====>视频下载完成【{}】,耗时:{} s，剩余{}", videoName, (System.currentTimeMillis() - startTime) / 1000, count - 1);
+                        latch.countDown();
                     }
                 });
 
@@ -121,11 +116,11 @@ public class MP4Downloader implements Runnable, NamedTask, MediaLoader {
                 try {
                     Thread.sleep(200);
                 } catch (InterruptedException e1) {
-                    e1.printStackTrace();
+                    log.error("{}", e);
                 }
                 ExecutorService.execute(this);
             } else {
-                log.info(" video:{}最大重试结束:{}", videoName, maxRetryCount);
+                log.error(" video:{}最大重试结束:{}", videoName, maxRetryCount);
                 latch.countDown();
             }
         }

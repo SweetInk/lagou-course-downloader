@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  */
 @Slf4j
 @Deprecated
-public class M3U8MediaLoader implements Runnable, NamedTask, MediaLoader {
+public class M3U8MediaLoader implements NamedTask, MediaLoader {
     private final static Pattern pattern = Pattern.compile("(URI=\")(.*)(\")");
     private final static int maxRetryCount = 3;
     CountDownLatch latch;
