@@ -1,6 +1,7 @@
 package online.githuboy.lagou.course.decrypt.alibaba;
 
 import cn.hutool.core.codec.Base64;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import lombok.SneakyThrows;
 
@@ -14,10 +15,12 @@ import java.util.*;
 
 
 /**
+ * 阿里云API工具类
+ *
  * @author suchu
  * @date 2020/8/6
  */
-public class AliPlayerDecrypt {
+public class AliyunApiUtils {
 
     public static String prettyJson(String json) {
         if (null == json || json.length() <= 0) {
@@ -32,8 +35,12 @@ public class AliPlayerDecrypt {
         return JSONObject.toJSONString(jsonObject, true);
     }
 
-    @SneakyThrows
     public static String getPlayInfoRequestUrl(String aliPlayAuth, String fileId) {
+        return getPlayInfoRequestUrl("", aliPlayAuth, fileId);
+    }
+
+    @SneakyThrows
+    public static String getPlayInfoRequestUrl(String rand, String aliPlayAuth, String fileId) {
         String playAuthStr = cn.hutool.core.codec.Base64.decodeStr(aliPlayAuth);
         PlayAuth playAuth = PlayAuth.from(playAuthStr);
         Map<String, String> publicParam = new HashMap<>();
@@ -46,7 +53,8 @@ public class AliPlayerDecrypt {
         publicParam.put("Format", "JSON");
         publicParam.put("Channel", "HTML5");
         publicParam.put("StreamType", "video");
-//        publicParam.put("Formats","mp4");
+        if (StrUtil.isNotBlank(rand))
+            publicParam.put("Rand", rand);
         publicParam.put("Formats", "");
 
         publicParam.put("Version", "2017-03-21");
