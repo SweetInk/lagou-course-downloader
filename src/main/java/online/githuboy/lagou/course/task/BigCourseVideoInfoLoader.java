@@ -1,5 +1,9 @@
 package online.githuboy.lagou.course.task;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.constants.ResourceType;
 import online.githuboy.lagou.course.constants.RespCode;
 import online.githuboy.lagou.course.pojo.vo.PlayInfoVo;
@@ -7,17 +11,13 @@ import online.githuboy.lagou.course.support.CookieStore;
 import online.githuboy.lagou.course.support.ExecutorService;
 import online.githuboy.lagou.course.support.MediaLoader;
 import online.githuboy.lagou.course.utils.HttpUtils;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-import static online.githuboy.lagou.course.decrypt.alibaba.AliPlayerDecrypt.getPlayInfoRequestUrl;
+import static online.githuboy.lagou.course.decrypt.alibaba.AliyunApiUtils.getPlayInfoRequestUrl;
 import static online.githuboy.lagou.course.support.ExecutorService.COUNTER;
 
 /**

@@ -13,13 +13,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static online.githuboy.lagou.course.decrypt.alibaba.AliPlayerDecrypt.*;
+import static online.githuboy.lagou.course.decrypt.alibaba.AliyunApiUtils.*;
 
 /**
  * @author suchu
  * @date 2020/12/11
  */
-public class AliPlayerDecryptTest {
+public class AliyunApiUtilsTest {
     @Test
     @SneakyThrows
     public void testSign() {

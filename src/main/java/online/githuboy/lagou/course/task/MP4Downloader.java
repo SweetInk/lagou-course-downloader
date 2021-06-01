@@ -3,21 +3,18 @@ package online.githuboy.lagou.course.task;
 import cn.hutool.core.io.StreamProgress;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import lombok.Builder;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import online.githuboy.lagou.course.decrypt.alibaba.EncryptUtils;
+import online.githuboy.lagou.course.domain.AliyunVodPlayInfo;
+import online.githuboy.lagou.course.domain.PlayHistory;
+import online.githuboy.lagou.course.request.HttpAPI;
 import online.githuboy.lagou.course.support.*;
 import online.githuboy.lagou.course.utils.FileUtils;
-import online.githuboy.lagou.course.utils.HttpUtils;
 
 import java.io.File;
-import java.text.MessageFormat;
 import java.util.concurrent.CountDownLatch;
-
-import static online.githuboy.lagou.course.decrypt.alibaba.AliPlayerDecrypt.getPlayInfoRequestUrl;
 
 /**
  * MP4下载器
@@ -28,11 +25,9 @@ import static online.githuboy.lagou.course.decrypt.alibaba.AliPlayerDecrypt.getP
 @Builder
 @Slf4j
 public class MP4Downloader extends AbstractRetryTask implements NamedTask, MediaLoader {
-    private static final String API_TEMPLATE = "https://gate.lagou.com/v1/neirong/kaiwu/getLessonPlayHistory?lessonId={0}&isVideo=true";
     /**
      * 0 -> videoId
      */
-    private static final String PLAY_INFO_API = "https://gate.lagou.com/v1/neirong/kaiwu/getPlayInfo?lessonId=0&courseId=0&sectionId=0&vid={0}";
     private final static int maxRetryCount = 3;
     private final String videoName;
     private final String appId;
@@ -60,26 +55,15 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
     @Override
     protected void action() {
         initDir();
-        String url = MessageFormat.format(API_TEMPLATE, this.lessonId);
-        log.debug("获取课程:{}信息，url：{}", lessonId, url);
-        String body = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
-        JSONObject jsonObject = JSON.parseObject(body);
-        if (jsonObject.getInteger("state") != 1) throw new RuntimeException("获取课程信息失败:" + body);
-        String fileId = jsonObject.getJSONObject("content").getJSONObject("mediaPlayInfoVo").getString("fileId");
+        PlayHistory playHistory = HttpAPI.getPlayHistory(lessonId);
         //优先从拉钩视频平台获取可直接播放的URL
-        String playUrl = tryGetPlayUrlFromKaiwu(fileId);
+        String playUrl = HttpAPI.tryGetPlayUrlFromKaiwu(playHistory.getFileId());
         if (StrUtil.isBlank(playUrl)) {
-            String aliPlayAuth = jsonObject.getJSONObject("content").getJSONObject("mediaPlayInfoVo").getString("aliPlayAuth");
-            String playInfoRequestUrl = getPlayInfoRequestUrl(aliPlayAuth, fileId);
-            String response = HttpRequest.get(playInfoRequestUrl).execute().body();
-            log.debug("\nAPI request result:\n\n" + response);
-            JSONObject mediaObj = JSON.parseObject(response);
-            if (mediaObj.getString("Code") != null) throw new RuntimeException("获取媒体信息失败:");
-            JSONObject playInfoList = mediaObj.getJSONObject("PlayInfoList");
-            JSONArray playInfos = playInfoList.getJSONArray("PlayInfo");
-            if (playInfos != null && playInfos.size() > 0) {
-                JSONObject playInfo = playInfos.getJSONObject(0);
-                playUrl = playInfo.getString("PlayURL");
+            String rand = "test";
+            String encryptRand = EncryptUtils.encryptRand(rand);
+            AliyunVodPlayInfo vodPlayerInfo = HttpAPI.getVodPlayerInfo(encryptRand, playHistory.getAliPlayAuth(), playHistory.getFileId());
+            if (null != vodPlayerInfo) {
+                playUrl = vodPlayerInfo.getPlayURL();
                 log.info("解析出【{}】MP4播放地址:{}", videoName, playUrl);
             } else {
                 log.warn("没有获取到视频【{}】播放地址:", videoName);
@@ -95,11 +79,9 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
                     startTime = System.currentTimeMillis();
                 }
             }
-
             @Override
             public void progress(long l) {
             }
-
             @Override
             public void finish() {
                 Stats.remove(videoName);
@@ -109,17 +91,6 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
                 latch.countDown();
             }
         });
-    }
-
-    private String tryGetPlayUrlFromKaiwu(String fileId) {
-        String url = MessageFormat.format(PLAY_INFO_API, fileId);
-        String body = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
-        JSONObject jsonObject = JSON.parseObject(body);
-        if (jsonObject.getInteger("state") != 1) {
-            log.error("获取mp4播放地址失败:{}", body);
-            return null;
-        }
-        return jsonObject.getJSONObject("content").getString("playURL");
     }
 
     @Override
