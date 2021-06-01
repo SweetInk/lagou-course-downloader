@@ -1,9 +1,8 @@
 package online.githuboy.lagou.course.decrypt.alibaba;
 
+import cn.hutool.core.codec.Base64;
 import com.alibaba.fastjson.JSONObject;
-//import jdk.nashorn.internal.objects.NativeString;
 import lombok.SneakyThrows;
-import org.apache.commons.codec.binary.Base64;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -11,68 +10,14 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.security.SignatureException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.SimpleTimeZone;
-import java.util.UUID;
+import java.util.*;
+
 
 /**
  * @author suchu
  * @date 2020/8/6
  */
 public class AliPlayerDecrypt {
-    public static final String CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-
-    public static class WordCodec {
-        public static String stringify(EncryptedData e) {
-            StringBuilder r = new StringBuilder();
-            int[] temp = e.word;
-            for (int i = 0; i < e.sigBytes; i++) {
-                int n = temp[i >>> 2] >>> 24 - i % 4 * 8 & 255;
-//                r.append(NativeString.fromCharCode(r, n));
-                r.append(Character.toString((char) (n & '\uffff')));
-            }
-            return r.toString();
-        }
-    }
-
-    public static EncryptedData authKeyToEncryptData(String key) {
-        int keyLength = key.length();
-        int l = CHARS.length();
-        int[] r = new int[256];
-        for (int i = 0; i < l; i++) {
-            r[CHARS.charAt(i)] = i;
-        }
-        int charCode = CHARS.charAt(64);
-        int cIdx = key.indexOf(charCode);
-        if (-1 != cIdx)
-            keyLength = cIdx;
-        int[] result = new int[keyLength * 2];
-        int i = 0;
-        for (int j = 0; j < keyLength; j++) {
-            if (j % 4 != 0) {
-                int a = r[key.charAt(j - 1)] << j % 4 * 2;
-                int s = r[key.charAt(j)] >>> 6 - j % 4 * 2;
-                result[i >>> 2] |= (a | s) << 24 - i % 4 * 8;
-                i++;
-            }
-        }
-        return new EncryptedData(result, i > 0 ? i : result.length * 4);
-    }
-
-    public static class EncryptedData {
-        public EncryptedData(int[] word, int sigBytes) {
-            this.word = word;
-            this.sigBytes = sigBytes;
-        }
-
-        public int sigBytes;
-        public int[] word;
-    }
 
     public static String prettyJson(String json) {
         if (null == json || json.length() <= 0) {
@@ -89,9 +34,8 @@ public class AliPlayerDecrypt {
 
     @SneakyThrows
     public static String getPlayInfoRequestUrl(String aliPlayAuth, String fileId) {
-        EncryptedData d = AliPlayerDecrypt.authKeyToEncryptData(aliPlayAuth);
-        String stringify = WordCodec.stringify(d);
-        PlayAuth playAuth = PlayAuth.from(stringify);
+        String playAuthStr = cn.hutool.core.codec.Base64.decodeStr(aliPlayAuth);
+        PlayAuth playAuth = PlayAuth.from(playAuthStr);
         Map<String, String> publicParam = new HashMap<>();
         Map<String, String> privateParam = new HashMap<>();
         publicParam.put("AccessKeyId", playAuth.getAccessKeyId());
@@ -100,6 +44,11 @@ public class AliPlayerDecrypt {
         publicParam.put("SignatureVersion", "1.0");
         publicParam.put("SignatureNonce", generateRandom());
         publicParam.put("Format", "JSON");
+        publicParam.put("Channel", "HTML5");
+        publicParam.put("StreamType", "video");
+//        publicParam.put("Formats","mp4");
+        publicParam.put("Formats", "");
+
         publicParam.put("Version", "2017-03-21");
 
         privateParam.put("Action", "GetPlayInfo");
@@ -107,6 +56,7 @@ public class AliPlayerDecrypt {
         privateParam.put("AuthTimeout", "7200");
         privateParam.put("Definition", "240");
         privateParam.put("PlayConfig", "{}");
+//        privateParam.put("PlayConfig", "{\"EncryptType\":\"Unencrypted\"}");
         privateParam.put("ReAuthInfo", "{}");
         privateParam.put("SecurityToken", playAuth.getSecurityToken());
         privateParam.put("VideoId", fileId);
@@ -205,7 +155,7 @@ public class AliPlayerDecrypt {
         if (bytes == null || bytes.length == 0) {
             return null;
         }
-        return Base64.encodeBase64String(bytes);
+        return Base64.encode(bytes);
     }
 
     /*生成当前UTC时间戳Time*/

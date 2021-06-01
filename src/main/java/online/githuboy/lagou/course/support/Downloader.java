@@ -4,9 +4,9 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import online.githuboy.lagou.course.domain.DownloadType;
 import online.githuboy.lagou.course.domain.LessonInfo;
 import online.githuboy.lagou.course.task.VideoInfoLoader;
-import online.githuboy.lagou.course.domain.DownloadType;
 import online.githuboy.lagou.course.utils.HttpUtils;
 import online.githuboy.lagou.course.utils.ReadTxt;
 

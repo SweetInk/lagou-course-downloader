@@ -58,7 +58,7 @@ public class AliPlayerDecryptTest {
     @Test
     @SneakyThrows
     public void testFullRequest() {
-        String body = HttpUtils.get("https://gate.lagou.com/v1/neirong/kaiwu/getLessonPlayHistory?lessonId=4701&isVideo=true", CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
+        String body = HttpUtils.get("https://gate.lagou.com/v1/neirong/kaiwu/getLessonPlayHistory?lessonId=5324&isVideo=true", CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
         JSONObject jsonObject = JSON.parseObject(body);
 //        System.out.println(body);
         if (jsonObject.getInteger("state") != 1) throw new RuntimeException(body);
