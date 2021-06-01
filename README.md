@@ -41,7 +41,7 @@ Lagou课程的视频现托管在阿里云，[相关文档](https://help.aliyun.c
 
 视频元数据API接口文档:`https://help.aliyun.com/document_detail/56124.html?spm=a2c4g.11186623.2.30.14487fbfjBfxAC`
 
-视频的PreAuthCode解密算法逆向自aliplayer-min.js
+~~视频的PreAuthCode解密算法(md，后来发现是BASE64)逆向自aliplayer-min.js~~
 
 ~~视频片段使用`AES-CBC-128`加密/解密，通过分析js获取，视频的密钥在视频的m3u8文件中有地址。[相关文档](https://cloud.tencent.com/document/product/266/9638)~~
 
