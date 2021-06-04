@@ -1,23 +1,24 @@
 package online.githuboy.lagou.course.support;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import cn.hutool.core.collection.CollectionUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import online.githuboy.lagou.course.domain.CourseInfo;
 import online.githuboy.lagou.course.domain.DownloadType;
 import online.githuboy.lagou.course.domain.LessonInfo;
+import online.githuboy.lagou.course.request.HttpAPI;
 import online.githuboy.lagou.course.task.VideoInfoLoader;
-import online.githuboy.lagou.course.utils.HttpUtils;
 import online.githuboy.lagou.course.utils.ReadTxt;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static online.githuboy.lagou.course.support.ExecutorService.COUNTER;
 
@@ -30,7 +31,6 @@ import static online.githuboy.lagou.course.support.ExecutorService.COUNTER;
 @Slf4j
 public class Downloader {
 
-    private final static String COURSE_INFO_API = "https://gate.lagou.com/v1/neirong/kaiwu/getCourseLessons?courseId={0}";
     /**
      * 拉钩视频课程地址
      */
@@ -51,9 +51,6 @@ public class Downloader {
 
     private File textPath;
 
-
-    private final String courseUrl;
-
     private CountDownLatch latch;
 
     /**
@@ -68,21 +65,19 @@ public class Downloader {
     public Downloader(String courseId, String savePath) {
         this.courseId = courseId;
         this.savePath = savePath;
-        this.courseUrl = MessageFormat.format(COURSE_INFO_API, courseId);
     }
 
     public Downloader(String courseId, String savePath, DownloadType downloadType) {
         this.courseId = courseId;
         this.savePath = savePath;
-        this.courseUrl = MessageFormat.format(COURSE_INFO_API, courseId);
         this.downloadType = downloadType;
     }
 
     public void start() throws InterruptedException {
         start = System.currentTimeMillis();
-        List<LessonInfo> i1 = parseLessonInfo();
-        if (i1 != null && i1.size() > 0) {
-            int i = parseVideoInfo(i1, this.downloadType);
+        List<LessonInfo> lessons = parseLessonInfo();
+        if (!CollectionUtil.isEmpty(lessons)) {
+            int i = parseVideoInfo(lessons, this.downloadType);
             if (i > 0) {
                 downloadMedia(i);
             } else {
@@ -96,71 +91,55 @@ public class Downloader {
      */
     private List<LessonInfo> parseLessonInfo() {
         List<LessonInfo> lessonInfoList = new ArrayList<>();
-
         // TODO retry
-        String strContent = HttpUtils
-                .get(courseUrl, CookieStore.getCookie())
-                .header("x-l-req-header", " {deviceType:1}")
-                .execute().body();
-
-        JSONObject jsonObject = JSONObject.parseObject(strContent);
-        if (jsonObject.getInteger("state") != 1) {
-            throw new RuntimeException("访问课程信息出错:" + strContent);
-        }
-        jsonObject = jsonObject.getJSONObject("content");
-        courseName = jsonObject.getString("courseName");
-        JSONArray courseSections = jsonObject.getJSONArray("courseSectionList");
-
+        CourseInfo courseInfo = HttpAPI.getCourseInfo(this.courseId);
+        courseName = courseInfo.getCourseName();
         this.basePath = new File(savePath, this.courseId + "_" + courseName);
         if (!basePath.exists()) {
             basePath.mkdirs();
             log.info("视频存放文件夹{}", basePath.getAbsolutePath());
         }
-
         this.textPath = new File(this.basePath, "文档");
         if (!textPath.exists()) {
             textPath.mkdirs();
             log.info("文档存放文件夹{}", textPath.getAbsolutePath());
         }
-
-        if (courseSections == null || courseSections.size() <= 0) {
+        if (CollectionUtil.isEmpty(courseInfo.getCourseSectionList())) {
             log.error("《{}》课程为空", courseName);
-            return null;
+            return Collections.emptyList();
         }
-
         log.info("====>正在下载《{}》 courseId={}", courseName, this.courseId);
-        for (int i = 0; i < courseSections.size(); i++) {
-            JSONObject courseSection = courseSections.getJSONObject(i);
-            JSONArray courseLessons = courseSection.getJSONArray("courseLessons");
-            if (courseLessons != null) {
-                for (int j = 0; j < courseLessons.size(); j++) {
-                    JSONObject lesson = courseLessons.getJSONObject(j);
-                    String lessonName = lesson.getString("theme");
-                    String status = lesson.getString("status");
-                    if (!"RELEASE".equals(status)) {
-                        log.info("课程:【{}】 [未发布]", lessonName);
-                        continue;
-                    }
-                    //insert your filter code,use for debug
-                    String lessonId = lesson.getString("id");
-                    String fileId = "";
-                    String fileUrl = "";
-                    String fileEdk = "";
-                    JSONObject videoMediaDTO = lesson.getJSONObject("videoMediaDTO");
-                    if (null != videoMediaDTO) {
-                        fileId = videoMediaDTO.getString("fileId");
-                        fileUrl = videoMediaDTO.getString("fileUrl");
-                        fileEdk = videoMediaDTO.getString("fileEdk");
-                    }
-                    String appId = lesson.getString("appId");
-                    LessonInfo lessonInfo = LessonInfo.builder().lessonId(lessonId).lessonName(lessonName).fileId(fileId).appId(appId).fileEdk(fileEdk).fileUrl(fileUrl).build();
-                    if (!Mp4History.contains(lessonInfo.getLessonId())) {
-                        lessonInfoList.add(lessonInfo);
-                    } else {
-                        log.debug("课程【{}】已经下载过了", lessonInfo.getLessonName());
-                    }
-                    log.debug("解析到课程信息：【{}】,appId:{},fileId:{}", lessonName, appId, fileId);
-                }
+        for (CourseInfo.Section section : courseInfo.getCourseSectionList()) {
+            if (!CollectionUtil.isEmpty(section.getCourseLessons())) {
+                List<LessonInfo> lessons = section
+                        .getCourseLessons()
+                        .stream()
+                        .filter(lesson -> {
+                            if (!"RELEASE".equals(lesson.getStatus())) {
+                                log.info("课程:【{}】 [未发布]", lesson.getTheme());
+                                return false;
+                            }
+                            return true;
+                        }).filter(lesson -> {
+                                    if (Mp4History.contains(lesson.getId() + "")) {
+                                        log.debug("课程【{}】已经下载过了", lesson.getTheme());
+                                        return false;
+                                    }
+                                    return true;
+                                }
+                        ).map(lesson -> {
+                            String fileId = null;
+                            String fileEdk = null;
+                            String fileUrl = null;
+                            if (null != lesson.getVideoMediaDTO()) {
+                                fileId = lesson.getVideoMediaDTO().getFileId();
+                                fileEdk = lesson.getVideoMediaDTO().getFileEdk();
+                                fileUrl = lesson.getVideoMediaDTO().getFileUrl();
+                            }
+                            log.debug("解析到课程信息：【{}】,appId:{},fileId:{}", lesson.getTheme(), lesson.getAppId(), fileId);
+                            return LessonInfo.builder().lessonId(lesson.getId() + "").lessonName(lesson.getTheme()).fileId(fileId).appId(lesson.getAppId()).fileEdk(fileEdk).fileUrl(fileUrl).build();
+                        }).collect(Collectors.toList());
+                lessonInfoList.addAll(lessons);
             } else {
                 log.error("获取课程视频列表信息失败");
             }
@@ -204,7 +183,7 @@ public class Downloader {
      * 下载课程解析后的视频
      *
      * @param i 理论需要下载的视频数量
-     * @throws InterruptedException
+     * @throws InterruptedException interruptedException
      */
     private void downloadMedia(int i) throws InterruptedException {
         log.debug("等待《{}》获取视频信息任务完成...", courseName);
@@ -216,7 +195,6 @@ public class Downloader {
             File file = new File(basePath, "下载失败.txt");
             ReadTxt readTxt = new ReadTxt();
             readTxt.writeFile(file.getAbsolutePath(), message);
-
             if (mediaLoadersSize <= 0) {
                 return;
             }
@@ -241,7 +219,6 @@ public class Downloader {
         } catch (IOException e) {
             log.error("{}", e);
         }
-
         if (!Stats.isEmpty()) {
             log.info("\n\n失败统计信息\n\n");
             Stats.failedCount.forEach((key, value) -> System.out.println(key + " -> " + value.get()));

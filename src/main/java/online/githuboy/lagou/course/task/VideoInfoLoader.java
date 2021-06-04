@@ -2,7 +2,7 @@ package online.githuboy.lagou.course.task;
 
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import online.githuboy.lagou.course.domain.CourseDetail;
+import online.githuboy.lagou.course.domain.CourseLessonDetail;
 import online.githuboy.lagou.course.domain.DownloadType;
 import online.githuboy.lagou.course.domain.PlayHistory;
 import online.githuboy.lagou.course.request.HttpAPI;
@@ -103,7 +103,7 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
 
     @Override
     public void action() {
-        CourseDetail courseDetail = HttpAPI.getCourseDetail(lessonId, videoName);
+        CourseLessonDetail courseDetail = HttpAPI.getCourseLessonDetail(lessonId, videoName);
         String status = courseDetail.getStatus();
         if (UNRELEASE.equals(status)) {
             log.info("视频:【{}】待更新", videoName);
@@ -111,7 +111,7 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
             COUNTER.incrementAndGet();
             return;
         }
-        CourseDetail.VideoMedia videoMedia = courseDetail.getVideoMedia();
+        CourseLessonDetail.VideoMedia videoMedia = courseDetail.getVideoMedia();
         if (videoMedia != null) {
             String m3u8Url = videoMedia.getFileUrl();
             if (m3u8Url != null) {

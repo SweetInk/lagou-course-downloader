@@ -9,7 +9,7 @@ import lombok.Data;
  * @date 2021/6/1
  */
 @Data
-public class CourseDetail {
+public class CourseLessonDetail {
     private String id;
     private String courseId;
     private String sectionId;
