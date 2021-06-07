@@ -7,7 +7,8 @@ import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.decrypt.alibaba.AliyunApiUtils;
 import online.githuboy.lagou.course.domain.AliyunVodPlayInfo;
-import online.githuboy.lagou.course.domain.CourseDetail;
+import online.githuboy.lagou.course.domain.CourseInfo;
+import online.githuboy.lagou.course.domain.CourseLessonDetail;
 import online.githuboy.lagou.course.domain.PlayHistory;
 import online.githuboy.lagou.course.support.CookieStore;
 import online.githuboy.lagou.course.utils.HttpUtils;
@@ -25,10 +26,20 @@ public class HttpAPI {
     private static final String PLAY_HISTORY_API = "https://gate.lagou.com/v1/neirong/kaiwu/getLessonPlayHistory?lessonId={0}&isVideo=true";
     private static final String PLAY_INFO_API = "https://gate.lagou.com/v1/neirong/kaiwu/getPlayInfo?lessonId=0&courseId=0&sectionId=0&vid={0}";
     private static final String COURSE_DETAIL_API = "https://gate.lagou.com/v1/neirong/kaiwu/getCourseLessonDetail?lessonId={0}";
+    private final static String COURSE_INFO_API = "https://gate.lagou.com/v1/neirong/kaiwu/getCourseLessons?courseId={0}";
+
+    public static CourseInfo getCourseInfo(String courseId) {
+        String url = MessageFormat.format(COURSE_INFO_API, courseId);
+        log.debug("获取课程:{}信息，url：{}", courseId, url);
+        String body = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
+        JSONObject jsonObject = JSON.parseObject(body);
+        if (jsonObject.getInteger("state") != 1) throw new RuntimeException("获取课程信息失败:" + body);
+        return jsonObject.getJSONObject("content").toJavaObject(CourseInfo.class);
+    }
 
     public static PlayHistory getPlayHistory(String lessonId) {
         String url = MessageFormat.format(PLAY_HISTORY_API, lessonId);
-        log.debug("获取课程:{}信息，url：{}", lessonId, url);
+        log.debug("获取课程历史播放信息:{}信息，url：{}", lessonId, url);
         String body = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
         JSONObject jsonObject = JSON.parseObject(body);
         if (jsonObject.getInteger("state") != 1) throw new RuntimeException("获取课程信息失败:" + body);
@@ -50,9 +61,9 @@ public class HttpAPI {
         return null;
     }
 
-    public static CourseDetail getCourseDetail(String courseId, String courseName) {
+    public static CourseLessonDetail getCourseLessonDetail(String courseId, String courseName) {
         String url = MessageFormat.format(COURSE_DETAIL_API, courseId);
-        log.debug("获取视频信息URL:【{}】url：{}", courseId, url);
+        log.debug("获取课程详情URL:【{}】url：{}", courseId, url);
         String videoJson = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
         JSONObject json = JSON.parseObject(videoJson);
         Integer state = json.getInteger("state");
@@ -61,7 +72,7 @@ public class HttpAPI {
             throw new RuntimeException("获取视频信息失败:" + json.getString("message"));
         }
         JSONObject result = json.getJSONObject("content");
-        return result.toJavaObject(CourseDetail.class);
+        return result.toJavaObject(CourseLessonDetail.class);
     }
 
     public static String tryGetPlayUrlFromKaiwu(String fileId) {

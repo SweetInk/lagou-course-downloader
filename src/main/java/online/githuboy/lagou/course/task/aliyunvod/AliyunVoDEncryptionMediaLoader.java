@@ -136,6 +136,7 @@ public class AliyunVoDEncryptionMediaLoader extends AbstractRetryTask implements
             }
         }
         this.raw = sb.toString();
+        FileUtils.save(sb.toString().getBytes(), new File(this.baseFilePath, "video_origin.m3u8"));
         hlsLatch = new CountDownLatch(hsList.size());
         List<String> localHsList = new ArrayList<>(hsList.size());
         hsList.forEach(hsUrl -> {
@@ -153,8 +154,11 @@ public class AliyunVoDEncryptionMediaLoader extends AbstractRetryTask implements
         try {
             hlsLatch.await();
             log.info("视频:{} HS 片段下载完成 total:{}", fileName, hsList.size());
-            CmdExecutor.executeCmd(this.baseFilePath, "ffmpeg", "-y", "-allowed_extensions", "ALL", "-i", "video1.m3u8", "-c", "copy", "-bsf:a", "aac_adtstoasc", fileName + ".mp4");
+            CmdExecutor.executeCmd(this.baseFilePath, "ffmpeg", "-y", "-allowed_extensions", "ALL", "-i", "video_origin.m3u8", "-c", "copy", "-bsf:a", "aac_adtstoasc", fileName + ".mp4");
             log.info("视频:{} HS片段合并完成", fileName);
+            log.info("清理TS临时文件");
+            FileUtils.delete(this.baseFilePath, ".ts");
+            FileUtils.delete(this.baseFilePath, ".m3u8");
         } catch (InterruptedException | IOException e) {
             e.printStackTrace();
         }

@@ -33,8 +33,8 @@ public class FileUtils {
 
     public static void writeFile(File workdir, String pathname, String text) {
         try {
-            File writeName = new File(workdir,pathname);
-            if(!writeName.exists()){
+            File writeName = new File(workdir, pathname);
+            if (!writeName.exists()) {
                 try {
                     writeName.createNewFile();
                 } catch (IOException e) {
@@ -49,6 +49,17 @@ public class FileUtils {
             }
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public static void delete(File path, String suffix) {
+        File[] files = path.listFiles();
+        for (File file : files) {
+            if (!file.isDirectory() && file.getName().endsWith(suffix)) {
+                boolean delete = file.delete();
+                if (!delete)
+                    System.out.println(file.getAbsoluteFile().getPath() + " 删除失败");
+            }
         }
     }
 
