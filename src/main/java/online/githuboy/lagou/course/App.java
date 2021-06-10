@@ -5,6 +5,7 @@ import online.githuboy.lagou.course.support.CmdExecutor;
 import online.githuboy.lagou.course.support.Downloader;
 import online.githuboy.lagou.course.support.ExecutorService;
 import online.githuboy.lagou.course.domain.DownloadType;
+import online.githuboy.lagou.course.utils.ConfigUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,10 +29,10 @@ public class App {
             // return;
         }
         //拉钩课程ID
-        String courseId = "1";
+        String courseId = ConfigUtil.readValue("courseId");
         //视频保存的目录
 //        String savePath = "D:\\lagou";
-        String savePath = "course";
+        String savePath = ConfigUtil.readValue("mp4_sign_dir");
         Downloader downloader = new Downloader(courseId, savePath, DownloadType.ALL);
         Thread logThread = new Thread(() -> {
             while (true) {

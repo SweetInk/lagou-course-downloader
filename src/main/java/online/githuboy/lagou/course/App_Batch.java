@@ -1,10 +1,12 @@
 package online.githuboy.lagou.course;
 
+import cn.hutool.core.collection.CollectionUtil;
 import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.support.Course;
 import online.githuboy.lagou.course.support.Downloader;
 import online.githuboy.lagou.course.support.ExecutorService;
 import online.githuboy.lagou.course.domain.DownloadType;
+import online.githuboy.lagou.course.utils.ConfigUtil;
 
 import java.io.IOException;
 import java.util.List;
@@ -17,10 +19,13 @@ import java.util.List;
  * @date 2021/05/09
  */
 @Slf4j
-public class App2 {
+public class App_Batch {
     public static void main(String[] args) throws IOException, InterruptedException {
 
-        List<String> allCoursePurchasedRecordForPC = Course.getAllCoursePurchasedRecordForPC();
+
+        List<String> allCoursePurchasedRecordForPC = CollectionUtil.isNotEmpty(ConfigUtil.getCourseIds()) ?
+                ConfigUtil.getCourseIds() :
+                Course.getAllCoursePurchasedRecordForPC();
 
 //        allCoursePurchasedRecordForPC.remove("1");
 //        allCoursePurchasedRecordForPC.remove("287");
@@ -36,8 +41,10 @@ public class App2 {
 //        allCoursePurchasedRecordForPC.remove("837");
 //        allCoursePurchasedRecordForPC.remove("869"); // 这个视频有毒
 
+        allCoursePurchasedRecordForPC.removeAll(ConfigUtil.getDelCourse());
+
         //视频保存的目录
-        String savePath = "/media/iris/File-Old/lagou";
+        String savePath = ConfigUtil.readValue("mp4_dir");
 
         // 开始下载所有课程
         int i = 1;

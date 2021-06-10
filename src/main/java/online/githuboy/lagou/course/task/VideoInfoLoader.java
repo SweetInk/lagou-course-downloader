@@ -6,9 +6,7 @@ import online.githuboy.lagou.course.domain.CourseLessonDetail;
 import online.githuboy.lagou.course.domain.DownloadType;
 import online.githuboy.lagou.course.domain.PlayHistory;
 import online.githuboy.lagou.course.request.HttpAPI;
-import online.githuboy.lagou.course.support.AbstractRetryTask;
-import online.githuboy.lagou.course.support.ExecutorService;
-import online.githuboy.lagou.course.support.MediaLoader;
+import online.githuboy.lagou.course.support.*;
 import online.githuboy.lagou.course.task.aliyunvod.AliyunVoDEncryptionMediaLoader;
 import online.githuboy.lagou.course.utils.FileUtils;
 
@@ -28,6 +26,7 @@ import static online.githuboy.lagou.course.support.ExecutorService.COUNTER;
 public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
     private final static int maxRetryCount = 3;
     private final String videoName;
+    private final String courseId;
     private final String appId;
     private final String fileId;
     private final String fileUrl;
@@ -58,15 +57,17 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
      */
     private DownloadType downloadType = DownloadType.VIDEO;
 
-    public VideoInfoLoader(String videoName, String appId, String fileId, String fileUrl, String lessonId) {
+    public VideoInfoLoader(String videoName, String appId, String fileId, String fileUrl, String courseId, String lessonId) {
         this.videoName = videoName;
+        this.courseId = courseId;
         this.appId = appId;
         this.fileId = fileId;
         this.fileUrl = fileUrl;
         this.lessonId = lessonId;
     }
 
-    public VideoInfoLoader(String videoName, String appId, String fileId, String fileUrl, String lessonId, DownloadType downloadType) {
+    public VideoInfoLoader(String courseId, String videoName, String appId, String fileId, String fileUrl, String lessonId, DownloadType downloadType) {
+        this.courseId = courseId;
         this.videoName = videoName;
         this.appId = appId;
         this.fileId = fileId;
@@ -111,27 +112,30 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
             COUNTER.incrementAndGet();
             return;
         }
-        CourseLessonDetail.VideoMedia videoMedia = courseDetail.getVideoMedia();
-        if (videoMedia != null) {
-            String m3u8Url = videoMedia.getFileUrl();
-            if (m3u8Url != null) {
-                log.info("获取视频:【{}】m3u8播放地址成功:{}", videoName, m3u8Url);
-            }
-            if (!forceDownloadMp4) {
-                dispatch();
+        if (!Mp4History.contains(lessonId)) {
+            CourseLessonDetail.VideoMedia videoMedia = courseDetail.getVideoMedia();
+            if (videoMedia != null) {
+                String m3u8Url = videoMedia.getFileUrl();
+                if (m3u8Url != null) {
+                    log.info("获取视频:【{}】m3u8播放地址成功:{}", videoName, m3u8Url);
+                }
+                if (!forceDownloadMp4) {
+                    dispatch();
+                } else {
+                    MP4Downloader mp4Downloader = MP4Downloader.builder().appId(appId).basePath(basePath.getAbsoluteFile()).videoName(videoName).fileId(fileId).lessonId(lessonId).build();
+                    mediaLoaders.add(mp4Downloader);
+                }
             } else {
-                MP4Downloader mp4Downloader = MP4Downloader.builder().appId(appId).basePath(basePath.getAbsoluteFile()).videoName(videoName).fileId(fileId).lessonId(lessonId).build();
-                mediaLoaders.add(mp4Downloader);
+                log.warn("视频信息获取失败{}", videoName);
             }
-        } else {
-            log.warn("视频信息获取失败{}", videoName);
         }
         // 下载文档
-        if (this.downloadType == DownloadType.ALL) {
+        if (this.downloadType == DownloadType.ALL && !DocHistory.contains(lessonId)) {
             String textContent = courseDetail.getTextContent();
             if (textContent != null) {
                 String textFileName = FileUtils.getCorrectFileName(videoName) + ".md";
                 FileUtils.writeFile(textPath, textFileName, textContent);
+                DocHistory.append(lessonId);
             }
         }
         // 不可以移动到finally中调用

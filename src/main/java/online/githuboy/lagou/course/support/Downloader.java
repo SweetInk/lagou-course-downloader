@@ -8,6 +8,7 @@ import online.githuboy.lagou.course.domain.DownloadType;
 import online.githuboy.lagou.course.domain.LessonInfo;
 import online.githuboy.lagou.course.request.HttpAPI;
 import online.githuboy.lagou.course.task.VideoInfoLoader;
+import online.githuboy.lagou.course.utils.ConfigUtil;
 import online.githuboy.lagou.course.utils.ReadTxt;
 
 import java.io.File;
@@ -74,13 +75,19 @@ public class Downloader {
     }
 
     public void start() throws InterruptedException {
+        boolean b = ConfigUtil.checkDelCourse(courseId);
+        if (b) {
+            log.info("{} : {} {}", courseId, courseName, "是排除课程");
+            return;
+        }
         start = System.currentTimeMillis();
         List<LessonInfo> lessons = parseLessonInfo();
         if (!CollectionUtil.isEmpty(lessons)) {
-            int i = parseVideoInfo(lessons, this.downloadType);
+            int i = parseVideoInfo(courseId, lessons, this.downloadType);
             if (i > 0) {
                 downloadMedia(i);
             } else {
+                //ConfigUtil.addCourse(courseId);
                 log.info("===>《{}》所有课程都下载完成了", courseName);
             }
         }
@@ -121,8 +128,8 @@ public class Downloader {
                             }
                             return true;
                         }).filter(lesson -> {
-                                    if (Mp4History.contains(lesson.getId() + "")) {
-                                        log.debug("课程【{}】已经下载过了", lesson.getTheme());
+                                    if (DocHistory.contains(lesson.getId() + "")) {
+                                        log.debug("课程文章【{}】已经下载过了", lesson.getTheme());
                                         return false;
                                     }
                                     return true;
@@ -150,11 +157,13 @@ public class Downloader {
     /**
      * 解析课程得到视频信息
      *
+     *
+     * @param courseId
      * @param lessonInfoList
      * @param downloadType
      * @return
      */
-    private int parseVideoInfo(List<LessonInfo> lessonInfoList, DownloadType downloadType) {
+    private int parseVideoInfo(String courseId, List<LessonInfo> lessonInfoList, DownloadType downloadType) {
         AtomicInteger videoSize = new AtomicInteger();
         latch = new CountDownLatch(lessonInfoList.size());
         // 这里使用的线程安全的容器，否则多线程添加应该会出现问题. Vector的啊add()方法加了锁synchronized
@@ -162,18 +171,18 @@ public class Downloader {
         lessonInfoList.forEach(lessonInfo -> {
             String lessonId = lessonInfo.getLessonId();
             String lessonName = lessonInfo.getLessonName();
-            if (!Mp4History.contains(lessonId)) {
+            if (Mp4History.contains(lessonId) && DocHistory.contains(lessonId)) {
+                log.warn("课程【{}】已经下载过了", lessonName);
+                latch.countDown();
+                COUNTER.incrementAndGet();
+            } else {
                 videoSize.getAndIncrement();
-                VideoInfoLoader loader = new VideoInfoLoader(lessonName, lessonInfo.getAppId(), lessonInfo.getFileId(), lessonInfo.getFileUrl(), lessonId, downloadType);
+                VideoInfoLoader loader = new VideoInfoLoader(courseId, lessonName, lessonInfo.getAppId(), lessonInfo.getFileId(), lessonInfo.getFileUrl(), lessonId, downloadType);
                 loader.setMediaLoaders(mediaLoaders);
                 loader.setBasePath(this.basePath);
                 loader.setTextPath(this.textPath);
                 loader.setLatch(latch);
                 ExecutorService.execute(loader);
-            } else {
-                log.warn("课程【{}】已经下载过了", lessonName);
-                latch.countDown();
-                COUNTER.incrementAndGet();
             }
         });
         return videoSize.intValue();
