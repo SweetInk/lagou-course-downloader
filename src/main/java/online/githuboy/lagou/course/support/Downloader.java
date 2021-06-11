@@ -128,8 +128,9 @@ public class Downloader {
                             }
                             return true;
                         }).filter(lesson -> {
-                                    if (DocHistory.contains(lesson.getId() + "")) {
-                                        log.debug("课程文章【{}】已经下载过了", lesson.getTheme());
+                                    if (DocHistory.contains(lesson.getId() + "")
+                                            && Mp4History.contains(lesson.getId() + "")) {
+                                        log.debug("课程视频和文章【{}】已经下载过了", lesson.getTheme());
                                         return false;
                                     }
                                     return true;

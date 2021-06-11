@@ -44,7 +44,8 @@ public class App {
         // 开始下载所有课程
         int i = 1;
         for (String courseId : allCoursePurchasedRecordForPC) {
-            Downloader downloader = new Downloader(courseId, savePath, DownloadType.ALL);
+            Downloader downloader = new Downloader(courseId, savePath,
+                    DownloadType.loadByCode(Integer.valueOf(ConfigUtil.readValue("downloadType"))));
             downloader.start();
             log.info("\n\n\n");
             log.info("开始下载{}课程", i++);

@@ -105,32 +105,12 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
     @Override
     public void action() {
         CourseLessonDetail courseDetail = HttpAPI.getCourseLessonDetail(lessonId, videoName);
-        String status = courseDetail.getStatus();
-        if (UNRELEASE.equals(status)) {
-            log.info("视频:【{}】待更新", videoName);
-            latch.countDown();
-            COUNTER.incrementAndGet();
-            return;
-        }
-        if (!Mp4History.contains(lessonId)) {
-            CourseLessonDetail.VideoMedia videoMedia = courseDetail.getVideoMedia();
-            if (videoMedia != null) {
-                String m3u8Url = videoMedia.getFileUrl();
-                if (m3u8Url != null) {
-                    log.info("获取视频:【{}】m3u8播放地址成功:{}", videoName, m3u8Url);
-                }
-                if (!forceDownloadMp4) {
-                    dispatch();
-                } else {
-                    MP4Downloader mp4Downloader = MP4Downloader.builder().appId(appId).basePath(basePath.getAbsoluteFile()).videoName(videoName).fileId(fileId).lessonId(lessonId).build();
-                    mediaLoaders.add(mp4Downloader);
-                }
-            } else {
-                log.warn("视频信息获取失败{}", videoName);
-            }
+        //下载视频
+        if (DownloadType.needText(this.downloadType) && !Mp4History.contains(lessonId)) {
+            downMp4(courseDetail);
         }
         // 下载文档
-        if (this.downloadType == DownloadType.ALL && !DocHistory.contains(lessonId)) {
+        if (DownloadType.needText(this.downloadType) && !DocHistory.contains(lessonId)) {
             String textContent = courseDetail.getTextContent();
             if (textContent != null) {
                 String textFileName = FileUtils.getCorrectFileName(videoName) + ".md";
@@ -140,6 +120,32 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
         }
         // 不可以移动到finally中调用
         latch.countDown();
+    }
+
+    public void downMp4(CourseLessonDetail courseDetail) {
+        String status = courseDetail.getStatus();
+        if (UNRELEASE.equals(status)) {
+            log.info("视频:【{}】待更新", videoName);
+            latch.countDown();
+            COUNTER.incrementAndGet();
+            return;
+        }
+        CourseLessonDetail.VideoMedia videoMedia = courseDetail.getVideoMedia();
+        if (videoMedia == null) {
+            log.warn("视频信息获取失败{}", videoName);
+            return;
+        }
+
+        String m3u8Url = videoMedia.getFileUrl();
+        if (m3u8Url != null) {
+            log.info("获取视频:【{}】m3u8播放地址成功:{}", videoName, m3u8Url);
+        }
+        if (!forceDownloadMp4) {
+            dispatch();
+        } else {
+            MP4Downloader mp4Downloader = MP4Downloader.builder().appId(appId).basePath(basePath.getAbsoluteFile()).videoName(videoName).fileId(fileId).lessonId(lessonId).build();
+            mediaLoaders.add(mp4Downloader);
+        }
     }
 
     /**
