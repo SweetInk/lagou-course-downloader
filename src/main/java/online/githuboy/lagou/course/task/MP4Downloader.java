@@ -71,7 +71,8 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
                 return;
             }
         }
-        HttpRequest.get(playUrl).execute(true).writeBody(new File(workDir, FileUtils.getCorrectFileName(videoName) + ".mp4"), new StreamProgress() {
+        File mp4File = new File(workDir, FileUtils.getCorrectFileName(videoName) + ".!mp4");
+        HttpRequest.get(playUrl).execute(true).writeBody(mp4File, new StreamProgress() {
             @Override
             public void start() {
                 log.info("开始下载视频【{}】lessonId={}", videoName, lessonId);
@@ -87,6 +88,7 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
                 Stats.remove(videoName);
                 Mp4History.append(lessonId);
                 long count = latch.getCount();
+                FileUtils.replaceFileName(mp4File, ".!mp4", ".mp4");
                 log.info("====>视频下载完成【{}】,耗时:{} s，剩余{}", videoName, (System.currentTimeMillis() - startTime) / 1000, count - 1);
                 latch.countDown();
             }

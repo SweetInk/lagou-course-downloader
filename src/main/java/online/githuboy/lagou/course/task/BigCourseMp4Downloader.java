@@ -44,7 +44,8 @@ public class BigCourseMp4Downloader implements Runnable, NamedTask, MediaLoader 
     public void run() {
         try {
             if (this.playUrl != null) {
-                HttpRequest.get(this.playUrl).execute(true).writeBody(new File(basePath, FileUtils.getCorrectFileName(videoName) + ".mp4"), new StreamProgress() {
+                File mp4File = new File(basePath, FileUtils.getCorrectFileName(videoName) + ".!mp4");
+                HttpRequest.get(this.playUrl).execute(true).writeBody(mp4File, new StreamProgress() {
                     @Override
                     public void start() {
                         log.info("开始下载视频【{}】lessonId={}", videoName, lessonId);
@@ -63,6 +64,7 @@ public class BigCourseMp4Downloader implements Runnable, NamedTask, MediaLoader 
                         Mp4History.append(lessonId);
                         latch.countDown();
                         long count = latch.getCount();
+                        FileUtils.replaceFileName(mp4File, ".!mp4", ".mp4");
                         log.info("====>视频下载完成【{}】,耗时:{} s，剩余{}", videoName, (System.currentTimeMillis() - startTime) / 1000, count);
                     }
                 });

@@ -1,7 +1,11 @@
 package online.githuboy.lagou.course.support;
 
+import cn.hutool.core.io.FileUtil;
+import online.githuboy.lagou.course.utils.ConfigUtil;
+import online.githuboy.lagou.course.utils.FileUtils;
 import online.githuboy.lagou.course.utils.ReadTxt;
 
+import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -39,8 +43,20 @@ public class Mp4History {
         return historySet;
     }
 
-    public static boolean contains(String id) {
-        return historySet.contains(id);
+    public static boolean contains(String id, String lessonName, String courseId, String courseName) {
+
+        String savePath = ConfigUtil.readValue("mp4_dir");
+
+        courseName = FileUtils.getCorrectFileName(courseName);
+        lessonName = FileUtils.getCorrectFileName(lessonName);
+
+        boolean exist = FileUtil.exist(String.join(File.separator,
+                savePath,
+                courseId + "_" + courseName,
+                lessonName + ".mp4"));
+
+        //return historySet.contains(id);
+        return exist;
     }
 
 }

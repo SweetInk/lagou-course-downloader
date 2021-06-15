@@ -1,6 +1,8 @@
 package online.githuboy.lagou.course.support;
 
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.domain.CourseInfo;
@@ -10,13 +12,12 @@ import online.githuboy.lagou.course.request.HttpAPI;
 import online.githuboy.lagou.course.task.VideoInfoLoader;
 import online.githuboy.lagou.course.utils.ConfigUtil;
 import online.githuboy.lagou.course.utils.ReadTxt;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -115,6 +116,9 @@ public class Downloader {
             log.error("《{}》课程为空", courseName);
             return Collections.emptyList();
         }
+
+        StringBuilder sb = new StringBuilder();
+
         log.info("====>正在下载《{}》 courseId={}", courseName, this.courseId);
         for (CourseInfo.Section section : courseInfo.getCourseSectionList()) {
             if (!CollectionUtil.isEmpty(section.getCourseLessons())) {
@@ -122,14 +126,24 @@ public class Downloader {
                         .getCourseLessons()
                         .stream()
                         .filter(lesson -> {
+                            StringJoiner sj = new StringJoiner("  ||  ");
+                            sj.add(lesson.getId().toString());
+
+                            String statusName = StringUtils.replace(lesson.getStatus(), "RELEASE", "已发布");
+                            sj.add(statusName);
+
+                            sj.add(lesson.getTheme());
+
+                            sb.append("\n").append(sj);
+
                             if (!"RELEASE".equals(lesson.getStatus())) {
                                 log.info("课程:【{}】 [未发布]", lesson.getTheme());
                                 return false;
                             }
                             return true;
                         }).filter(lesson -> {
-                                    if (DocHistory.contains(lesson.getId() + "")
-                                            && Mp4History.contains(lesson.getId() + "")) {
+                                    if (DocHistory.contains(lesson.getId() + "", lesson.getTheme(), courseId, courseName)
+                                            && Mp4History.contains(lesson.getId() + "",  lesson.getTheme(), courseId, courseName)) {
                                         log.debug("课程视频和文章【{}】已经下载过了", lesson.getTheme());
                                         return false;
                                     }
@@ -152,6 +166,16 @@ public class Downloader {
                 log.error("获取课程视频列表信息失败");
             }
         }
+
+        //保存课程信息到目录
+        try {
+            File file = new File(basePath, "课程列表信息.txt");
+            FileUtil.del(file);
+            IoUtil.writeUtf8(new FileOutputStream(file), true, sb);
+        } catch (IOException e) {
+            log.error("{}", e);
+        }
+
         return lessonInfoList;
     }
 
@@ -172,13 +196,15 @@ public class Downloader {
         lessonInfoList.forEach(lessonInfo -> {
             String lessonId = lessonInfo.getLessonId();
             String lessonName = lessonInfo.getLessonName();
-            if (Mp4History.contains(lessonId) && DocHistory.contains(lessonId)) {
+            if (Mp4History.contains(lessonId, lessonName, courseId, courseName) && DocHistory.contains(lessonId, lessonName, courseId, courseName)) {
                 log.warn("课程【{}】已经下载过了", lessonName);
                 latch.countDown();
                 COUNTER.incrementAndGet();
             } else {
                 videoSize.getAndIncrement();
-                VideoInfoLoader loader = new VideoInfoLoader(courseId, lessonName, lessonInfo.getAppId(), lessonInfo.getFileId(), lessonInfo.getFileUrl(), lessonId, downloadType);
+                VideoInfoLoader loader = new VideoInfoLoader(courseId, courseName, lessonId, lessonName,
+                        lessonInfo.getAppId(), lessonInfo.getFileId(),
+                        lessonInfo.getFileUrl(), downloadType);
                 loader.setMediaLoaders(mediaLoaders);
                 loader.setBasePath(this.basePath);
                 loader.setTextPath(this.textPath);

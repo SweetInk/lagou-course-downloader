@@ -1,6 +1,7 @@
 package online.githuboy.lagou.course.utils;
 
 import cn.hutool.core.io.FileUtil;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -50,6 +51,10 @@ public class FileUtils {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void replaceFileName(File file, String searchStr, String destStr) {
+        FileUtil.move(file, new File(StringUtils.replace(file.getPath(), searchStr, destStr)), true);
     }
 
     public static void delete(File path, String suffix) {

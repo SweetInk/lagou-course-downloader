@@ -27,6 +27,7 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
     private final static int maxRetryCount = 3;
     private final String videoName;
     private final String courseId;
+    private final String courseName;
     private final String appId;
     private final String fileId;
     private final String fileUrl;
@@ -57,22 +58,15 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
      */
     private DownloadType downloadType = DownloadType.VIDEO;
 
-    public VideoInfoLoader(String videoName, String appId, String fileId, String fileUrl, String courseId, String lessonId) {
-        this.videoName = videoName;
+    public VideoInfoLoader(String courseId, String courseName, String lessonId, String lessonName,
+                           String appId, String fileId, String fileUrl, DownloadType downloadType) {
         this.courseId = courseId;
+        this.courseName = courseName;
+        this.lessonId = lessonId;
+        this.videoName = lessonName;
         this.appId = appId;
         this.fileId = fileId;
         this.fileUrl = fileUrl;
-        this.lessonId = lessonId;
-    }
-
-    public VideoInfoLoader(String courseId, String videoName, String appId, String fileId, String fileUrl, String lessonId, DownloadType downloadType) {
-        this.courseId = courseId;
-        this.videoName = videoName;
-        this.appId = appId;
-        this.fileId = fileId;
-        this.fileUrl = fileUrl;
-        this.lessonId = lessonId;
         this.downloadType = downloadType;
     }
 
@@ -106,15 +100,16 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
     public void action() {
         CourseLessonDetail courseDetail = HttpAPI.getCourseLessonDetail(lessonId, videoName);
         //下载视频
-        if (DownloadType.needText(this.downloadType) && !Mp4History.contains(lessonId)) {
+        if (DownloadType.needText(this.downloadType) && !Mp4History.contains(lessonId, videoName, courseId, courseName)) {
             downMp4(courseDetail);
         }
         // 下载文档
-        if (DownloadType.needText(this.downloadType) && !DocHistory.contains(lessonId)) {
+        if (DownloadType.needText(this.downloadType) && !DocHistory.contains(lessonId, videoName, courseId, courseName)) {
             String textContent = courseDetail.getTextContent();
             if (textContent != null) {
-                String textFileName = FileUtils.getCorrectFileName(videoName) + ".md";
+                String textFileName = FileUtils.getCorrectFileName(videoName) + ".!md";
                 FileUtils.writeFile(textPath, textFileName, textContent);
+                FileUtils.replaceFileName(textPath, ".!md", ".md");
                 DocHistory.append(lessonId);
             }
         }
