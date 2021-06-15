@@ -52,7 +52,7 @@ public class DocHistory {
         boolean exist = FileUtil.exist(String.join(File.separator,
                 savePath,
                 courseId + "_" + courseName + File.separator + "文档",
-                lessonName + ".md"));
+                "[" + lessonId + "] " + lessonName + ".md"));
 
         //return historySet.contains(lessonId) && exist;
         return exist;

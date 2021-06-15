@@ -135,7 +135,7 @@ public class Downloader {
 
                             sj.add(lesson.getTheme());
 
-                            sb.append("\n").append(sj);
+                            sb.append(sj).append("\n");
 
                             if (!"RELEASE".equals(lesson.getStatus())) {
                                 log.info("课程:【{}】 [未发布]", lesson.getTheme());

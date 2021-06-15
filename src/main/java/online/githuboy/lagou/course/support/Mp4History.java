@@ -43,7 +43,7 @@ public class Mp4History {
         return historySet;
     }
 
-    public static boolean contains(String id, String lessonName, String courseId, String courseName) {
+    public static boolean contains(String lessonId, String lessonName, String courseId, String courseName) {
 
         String savePath = ConfigUtil.readValue("mp4_dir");
 
@@ -53,7 +53,7 @@ public class Mp4History {
         boolean exist = FileUtil.exist(String.join(File.separator,
                 savePath,
                 courseId + "_" + courseName,
-                lessonName + ".mp4"));
+                "[" + lessonId + "] " + lessonName + ".mp4"));
 
         //return historySet.contains(id) && exist;
         return exist;
