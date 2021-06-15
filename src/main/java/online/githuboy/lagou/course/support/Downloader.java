@@ -130,6 +130,7 @@ public class Downloader {
                             sj.add(lesson.getId().toString());
 
                             String statusName = StringUtils.replace(lesson.getStatus(), "RELEASE", "已发布");
+                            statusName = StringUtils.replace(statusName, "UNRELEASE", "没有发布");
                             sj.add(statusName);
 
                             sj.add(lesson.getTheme());
