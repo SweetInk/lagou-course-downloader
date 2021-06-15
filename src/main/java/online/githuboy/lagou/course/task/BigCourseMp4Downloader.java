@@ -44,7 +44,7 @@ public class BigCourseMp4Downloader implements Runnable, NamedTask, MediaLoader 
     public void run() {
         try {
             if (this.playUrl != null) {
-                File mp4File = new File(basePath, FileUtils.getCorrectFileName(videoName) + ".!mp4");
+                File mp4File = new File(basePath, "[" + lessonId + "] " + FileUtils.getCorrectFileName(videoName) + ".!mp4");
                 HttpRequest.get(this.playUrl).execute(true).writeBody(mp4File, new StreamProgress() {
                     @Override
                     public void start() {

@@ -71,7 +71,7 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
                 return;
             }
         }
-        File mp4File = new File(workDir, FileUtils.getCorrectFileName(videoName) + ".!mp4");
+        File mp4File = new File(workDir, "[" + lessonId + "] " + FileUtils.getCorrectFileName(videoName) + ".!mp4");
         HttpRequest.get(playUrl).execute(true).writeBody(mp4File, new StreamProgress() {
             @Override
             public void start() {

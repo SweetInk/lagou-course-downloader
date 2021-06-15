@@ -55,8 +55,8 @@ public class Mp4History {
                 courseId + "_" + courseName,
                 lessonName + ".mp4"));
 
-        return historySet.contains(id) && exist;
-        //return exist;
+        //return historySet.contains(id) && exist;
+        return exist;
     }
 
 }

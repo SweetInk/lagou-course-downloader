@@ -1,13 +1,16 @@
 package online.githuboy.lagou.course.utils;
 
 import cn.hutool.core.io.FileUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 
+@Slf4j
 public class FileUtils {
     public static void save(byte[] bytes, File path) {
         FileUtil.writeBytes(bytes, path);
@@ -54,7 +57,13 @@ public class FileUtils {
     }
 
     public static void replaceFileName(File file, String searchStr, String destStr) {
-        FileUtil.move(file, new File(StringUtils.replace(file.getPath(), searchStr, destStr)), true);
+        File destFile = new File(StringUtils.replace(file.getPath(), searchStr, destStr));
+        try {
+            Files.deleteIfExists(destFile.toPath());
+            file.renameTo(destFile);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+        }
     }
 
     public static void delete(File path, String suffix) {
@@ -74,4 +83,5 @@ public class FileUtils {
         System.out.println(FileUtils.getCorrectFileName("01 | Spring Data JPA 初识"));
         System.out.println(r);
     }
+
 }

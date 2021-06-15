@@ -54,8 +54,8 @@ public class DocHistory {
                 courseId + "_" + courseName + File.separator + "文档",
                 lessonName + ".md"));
 
-        return historySet.contains(lessonId) && exist;
-        //return exist;
+        //return historySet.contains(lessonId) && exist;
+        return exist;
     }
 
 }
