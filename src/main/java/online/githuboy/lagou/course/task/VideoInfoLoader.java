@@ -109,7 +109,7 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
             if (textContent != null) {
                 String textFileName = FileUtils.getCorrectFileName(videoName) + ".!md";
                 FileUtils.writeFile(textPath, textFileName, textContent);
-                FileUtils.replaceFileName(textPath, ".!md", ".md");
+                FileUtils.replaceFileName(new File(textPath.getPath() + File.separator + textFileName), ".!md", ".md");
                 DocHistory.append(lessonId);
             }
         }
