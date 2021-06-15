@@ -1,5 +1,6 @@
 package online.githuboy.lagou.course.request;
 
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.http.HttpRequest;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
@@ -47,7 +48,8 @@ public class HttpAPI {
             body = httpRequest.execute().body();
         } catch (Exception e) {
             try {
-                Thread.sleep(TimeUnit.SECONDS.toMillis(2));
+                Thread.sleep(RandomUtil.randomLong(TimeUnit.SECONDS.toMillis(1),
+                        TimeUnit.SECONDS.toMillis(2)));
             } catch (InterruptedException interruptedException) {
                 log.error(interruptedException.getMessage(), interruptedException);
             }

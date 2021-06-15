@@ -1,6 +1,7 @@
 package online.githuboy.lagou.course.task;
 
 import cn.hutool.core.io.StreamProgress;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
 import lombok.Builder;
@@ -15,6 +16,7 @@ import online.githuboy.lagou.course.utils.FileUtils;
 
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * MP4下载器
@@ -108,7 +110,8 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
         retryCount += 1;
         log.info("第:{}次重试获取:{}", retryCount, videoName);
         try {
-            Thread.sleep(200);
+            Thread.sleep(RandomUtil.randomLong(TimeUnit.SECONDS.toMillis(1),
+                    TimeUnit.SECONDS.toMillis(2)));
         } catch (InterruptedException e1) {
             log.error("线程休眠异常", e1);
         }
