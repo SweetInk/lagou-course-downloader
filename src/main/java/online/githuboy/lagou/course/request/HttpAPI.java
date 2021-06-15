@@ -14,6 +14,7 @@ import online.githuboy.lagou.course.support.CookieStore;
 import online.githuboy.lagou.course.utils.HttpUtils;
 
 import java.text.MessageFormat;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 所有http 请求接口放这里
@@ -40,7 +41,20 @@ public class HttpAPI {
     public static PlayHistory getPlayHistory(String lessonId) {
         String url = MessageFormat.format(PLAY_HISTORY_API, lessonId);
         log.debug("获取课程历史播放信息:{}信息，url：{}", lessonId, url);
-        String body = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
+        HttpRequest httpRequest = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}");
+        String body;
+        try {
+            body = httpRequest.execute().body();
+        } catch (Exception e) {
+            try {
+                Thread.sleep(TimeUnit.SECONDS.toMillis(2));
+            } catch (InterruptedException interruptedException) {
+                log.error(interruptedException.getMessage(), interruptedException);
+            }
+            log.info("获取课程历史播放信息 重试1次");
+            body = httpRequest.execute().body();
+        }
+
         JSONObject jsonObject = JSON.parseObject(body);
         if (jsonObject.getInteger("state") != 1) throw new RuntimeException("获取课程信息失败:" + body);
         return jsonObject.getJSONObject("content").getJSONObject("mediaPlayInfoVo").toJavaObject(PlayHistory.class);

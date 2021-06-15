@@ -118,6 +118,7 @@ public class Downloader {
         }
 
         StringBuilder sb = new StringBuilder();
+        Map<String, AtomicInteger> map = new HashMap();
 
         log.info("====>正在下载《{}》 courseId={}", courseName, this.courseId);
         for (CourseInfo.Section section : courseInfo.getCourseSectionList()) {
@@ -132,6 +133,11 @@ public class Downloader {
                             String statusName = StringUtils.replace(lesson.getStatus(), "UNRELEASE", "没有发布");
                             statusName = StringUtils.replace(statusName, "RELEASE", "已发布");
                             sj.add(statusName);
+
+                            AtomicInteger count = map.get(statusName);
+                            count = Objects.isNull(count) ? new AtomicInteger(0) : count;
+                            count.incrementAndGet();
+                            map.put(statusName, count);
 
                             sj.add(lesson.getTheme());
 
@@ -172,6 +178,12 @@ public class Downloader {
         try {
             File file = new File(basePath, "课程列表信息.txt");
             FileUtil.del(file);
+
+            StringJoiner sj1 = new StringJoiner("   ");
+            map.forEach((key, value) -> {
+                sj1.add(key + ": " + value.get());
+            });
+            sb.insert(0, sj1 + "\n\n");
             IoUtil.writeUtf8(new FileOutputStream(file), true, sb);
         } catch (IOException e) {
             log.error("{}", e);
