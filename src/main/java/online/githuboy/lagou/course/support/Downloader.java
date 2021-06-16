@@ -140,7 +140,8 @@ public class Downloader {
                             map.put(statusName, count);
 
                             sj.add(lesson.getTheme());
-                            sj.add(lesson.getVideoMediaDTO().getEncryptedFileId());
+                            sj.add(Optional.ofNullable(lesson.getVideoMediaDTO())
+                                    .orElse(new CourseInfo.VideoMedia()).getEncryptedFileId());
 
                             sb.append(sj).append("\n");
 

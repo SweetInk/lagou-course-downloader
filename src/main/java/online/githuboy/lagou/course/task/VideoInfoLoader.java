@@ -127,7 +127,7 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
                 //追加精选留言类型
                 textContent += commentContent;
 
-                String textFileName = FileUtils.getCorrectFileName(videoName) + ".!md";
+                String textFileName = "[" + lessonId + "] " + FileUtils.getCorrectFileName(videoName) + ".!md";
                 FileUtils.writeFile(textPath, textFileName, textContent);
                 FileUtils.replaceFileName(new File(textPath.getPath() + File.separator + textFileName), ".!md", ".md");
                 DocHistory.append(lessonId);
