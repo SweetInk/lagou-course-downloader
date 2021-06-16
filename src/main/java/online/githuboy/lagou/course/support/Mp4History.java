@@ -47,13 +47,15 @@ public class Mp4History {
 
         String savePath = ConfigUtil.readValue("mp4_dir");
 
-        courseName = FileUtils.getCorrectFileName(courseName);
+        //courseName = FileUtils.getCorrectFileName(courseName);
+        //courseName = StringUtils.replace(courseName, "|", "");
         lessonName = FileUtils.getCorrectFileName(lessonName);
 
-        boolean exist = FileUtil.exist(String.join(File.separator,
+        String path = String.join(File.separator,
                 savePath,
                 courseId + "_" + courseName,
-                "[" + lessonId + "] " + lessonName + ".mp4"));
+                "[" + lessonId + "] " + lessonName + ".mp4");
+        boolean exist = FileUtil.exist(path);
 
         //return historySet.contains(id) && exist;
         return exist;

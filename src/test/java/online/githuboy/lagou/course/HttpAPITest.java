@@ -31,4 +31,10 @@ public class HttpAPITest {
         CourseLessonDetail courseDetail = HttpAPI.getCourseLessonDetail("4704", "04 | 如何利用 Repository 中的方法返回值解决实际问题？");
         System.out.println(JSON.toJSONString(courseDetail));
     }
+
+    @Test
+    public void tryGetPlayUrlFromKaiwuTest() {
+        String url = HttpAPI.tryGetPlayUrlFromKaiwu("84fa978fd4ad463b82092f38b3239743");
+        System.out.println(JSON.toJSONString(url));
+    }
 }

@@ -100,7 +100,7 @@ public class Downloader {
     private List<LessonInfo> parseLessonInfo() {
         List<LessonInfo> lessonInfoList = new ArrayList<>();
         // TODO retry
-        CourseInfo courseInfo = HttpAPI.getCourseInfo(this.courseId);
+        CourseInfo courseInfo = HttpAPI.courseInfoCache.get(this.courseId);
         courseName = courseInfo.getCourseName();
         this.basePath = new File(savePath, this.courseId + "_" + courseName);
         if (!basePath.exists()) {
@@ -140,6 +140,7 @@ public class Downloader {
                             map.put(statusName, count);
 
                             sj.add(lesson.getTheme());
+                            sj.add(lesson.getVideoMediaDTO().getEncryptedFileId());
 
                             sb.append(sj).append("\n");
 

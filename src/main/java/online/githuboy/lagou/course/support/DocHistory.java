@@ -2,6 +2,7 @@ package online.githuboy.lagou.course.support;
 
 import cn.hutool.core.io.FileUtil;
 import online.githuboy.lagou.course.utils.ConfigUtil;
+import online.githuboy.lagou.course.utils.FileUtils;
 import online.githuboy.lagou.course.utils.ReadTxt;
 import org.apache.commons.lang3.StringUtils;
 
@@ -46,13 +47,15 @@ public class DocHistory {
     public static boolean contains(String lessonId, String lessonName, String courseId, String courseName) {
         String savePath = ConfigUtil.readValue("mp4_dir");
 
-        courseName = StringUtils.replace(courseName, "|", "");
-        lessonName = StringUtils.replace(lessonName, "|", "");
+        //courseName = FileUtils.getCorrectFileName(courseName);
+        //courseName = StringUtils.replace(courseName, "|", "");
+        lessonName = FileUtils.getCorrectFileName(lessonName);
 
-        boolean exist = FileUtil.exist(String.join(File.separator,
+        String path = String.join(File.separator,
                 savePath,
                 courseId + "_" + courseName + File.separator + "文档",
-                "[" + lessonId + "] " + lessonName + ".md"));
+                "[" + lessonId + "] " + lessonName + ".md");
+        boolean exist = FileUtil.exist(path);
 
         //return historySet.contains(lessonId) && exist;
         return exist;

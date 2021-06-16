@@ -12,6 +12,7 @@ import online.githuboy.lagou.course.domain.AliyunVodPlayInfo;
 import online.githuboy.lagou.course.domain.PlayHistory;
 import online.githuboy.lagou.course.request.HttpAPI;
 import online.githuboy.lagou.course.support.*;
+import online.githuboy.lagou.course.utils.ConfigUtil;
 import online.githuboy.lagou.course.utils.FileUtils;
 
 import java.io.File;
@@ -57,7 +58,7 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
     @Override
     protected void action() {
         initDir();
-        PlayHistory playHistory = HttpAPI.getPlayHistory(lessonId);
+        PlayHistory playHistory = HttpAPI.playHistoryCache.get(lessonId);
         //优先从拉钩视频平台获取可直接播放的URL
         String playUrl = HttpAPI.tryGetPlayUrlFromKaiwu(playHistory.getFileId());
         if (StrUtil.isBlank(playUrl)) {
@@ -74,7 +75,7 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
             }
         }
         File mp4File = new File(workDir, "[" + lessonId + "] " + FileUtils.getCorrectFileName(videoName) + ".!mp4");
-        HttpUtil.downloadFile(playUrl, mp4File, 5 * 60 * 1000, new StreamProgress() {
+        HttpUtil.downloadFile(playUrl, mp4File, Integer.parseInt(ConfigUtil.readValue("mp4_download_timeout")) * 60 * 1000, new StreamProgress() {
             @Override
             public void start() {
                 log.info("开始下载视频【{}】lessonId={}", videoName, lessonId);
