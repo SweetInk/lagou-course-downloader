@@ -2,6 +2,7 @@ package online.githuboy.lagou.course.task;
 
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import online.githuboy.lagou.course.domain.CourseCommentListInfo;
 import online.githuboy.lagou.course.domain.CourseLessonDetail;
 import online.githuboy.lagou.course.domain.DownloadType;
 import online.githuboy.lagou.course.domain.PlayHistory;
@@ -12,7 +13,9 @@ import online.githuboy.lagou.course.utils.FileUtils;
 
 import java.io.File;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
 
 import static online.githuboy.lagou.course.support.ExecutorService.COUNTER;
 
@@ -99,6 +102,7 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
     @Override
     public void action() {
         CourseLessonDetail courseDetail = HttpAPI.getCourseLessonDetail(lessonId, videoName);
+        List<CourseCommentListInfo.CourseCommentList> courseCommentList = HttpAPI.getCourseCommentList(courseId, lessonId);
         //下载视频
         if (DownloadType.needText(this.downloadType) && !Mp4History.contains(lessonId, videoName, courseId, courseName)) {
             downMp4(courseDetail);
@@ -107,6 +111,22 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
         if (DownloadType.needText(this.downloadType) && !DocHistory.contains(lessonId, videoName, courseId, courseName)) {
             String textContent = courseDetail.getTextContent();
             if (textContent != null) {
+
+                String commentContent = courseCommentList.stream().map(courseComment -> {
+                    String text = String.format("##### %s：\n> %s\n",
+                            courseComment.getNickName(), courseComment.getComment());
+                    CourseCommentListInfo.CourseCommentList replayComment = courseComment.getReplayComment();
+                    if (Objects.nonNull(replayComment)) {
+                        text = text + String.format("\n ###### &nbsp;&nbsp;&nbsp; %s：\n> &nbsp;&nbsp;&nbsp; %s\n", replayComment.getNickName(), replayComment.getComment());
+                    }
+                    return text;
+                })
+                        .collect(Collectors.joining("\n"));
+                commentContent = "\n\n---\n\n### 精选评论\n\n" + commentContent + "\n";
+
+                //追加精选留言类型
+                textContent += commentContent;
+
                 String textFileName = FileUtils.getCorrectFileName(videoName) + ".!md";
                 FileUtils.writeFile(textPath, textFileName, textContent);
                 FileUtils.replaceFileName(new File(textPath.getPath() + File.separator + textFileName), ".!md", ".md");

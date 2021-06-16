@@ -1,5 +1,6 @@
 package online.githuboy.lagou.course.request;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.http.HttpRequest;
 import com.alibaba.fastjson.JSON;
@@ -9,14 +10,13 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.decrypt.alibaba.AliyunApiUtils;
-import online.githuboy.lagou.course.domain.AliyunVodPlayInfo;
-import online.githuboy.lagou.course.domain.CourseInfo;
-import online.githuboy.lagou.course.domain.CourseLessonDetail;
-import online.githuboy.lagou.course.domain.PlayHistory;
+import online.githuboy.lagou.course.domain.*;
 import online.githuboy.lagou.course.support.CookieStore;
 import online.githuboy.lagou.course.utils.HttpUtils;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -31,6 +31,7 @@ public class HttpAPI {
     private static final String PLAY_INFO_API = "https://gate.lagou.com/v1/neirong/kaiwu/getPlayInfo?lessonId=0&courseId=0&sectionId=0&vid={0}";
     private static final String COURSE_DETAIL_API = "https://gate.lagou.com/v1/neirong/kaiwu/getCourseLessonDetail?lessonId={0}";
     private final static String COURSE_INFO_API = "https://gate.lagou.com/v1/neirong/kaiwu/getCourseLessons?courseId={0}";
+    private final static String COURSE_COMMENT_LIST_API = "https://gate.lagou.com/v1/neirong/course/comment/getCourseCommentList?courseId={0}&lessonId={1}&pageNum={2}&needCount=true";
 
     public final static LoadingCache<String, CourseInfo> courseInfoCache = Caffeine.newBuilder()
             .expireAfterWrite(10, TimeUnit.MINUTES)
@@ -64,6 +65,48 @@ public class HttpAPI {
         JSONObject jsonObject = JSON.parseObject(body);
         if (jsonObject.getInteger("state") != 1) throw new RuntimeException("获取课程信息失败:" + body);
         return jsonObject.getJSONObject("content").toJavaObject(CourseInfo.class);
+    }
+
+    /**
+     * 获取精选留言
+     * @param courseId
+     * @param lessonId
+     * @return
+     */
+    public static List<CourseCommentListInfo.CourseCommentList> getCourseCommentList(String courseId, String lessonId) {
+        List<CourseCommentListInfo.CourseCommentList> list = new ArrayList<>();
+        boolean hasNextPage = true;
+        int i = 1;
+        while (hasNextPage) {
+            String url = MessageFormat.format(COURSE_COMMENT_LIST_API, courseId, lessonId, i++);
+            log.debug("获取课程精选留言:{}信息，url：{}", lessonId, url);
+            HttpRequest httpRequest = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}");
+
+            String body;
+            try {
+                body = httpRequest.execute().body();
+            } catch (Exception e) {
+                try {
+                    Thread.sleep(RandomUtil.randomLong(500L,
+                            TimeUnit.SECONDS.toMillis(1)));
+                } catch (InterruptedException interruptedException) {
+                    log.error(interruptedException.getMessage(), interruptedException);
+                }
+                log.info("获取课程 重试1次");
+                body = httpRequest.execute().body();
+            }
+
+            JSONObject jsonObject = JSON.parseObject(body);
+            if (jsonObject.getInteger("state") != 1) throw new RuntimeException("获取课精选留言失败:" + body);
+            CourseCommentListInfo content = jsonObject.getJSONObject("content").toJavaObject(CourseCommentListInfo.class);
+            //是否有下一页
+            hasNextPage = content.isHasNextPage();
+            if (CollectionUtil.isNotEmpty(content.getCourseCommentList())) {
+                list.addAll(content.getCourseCommentList());
+            }
+        }
+
+        return list;
     }
 
     public static PlayHistory getPlayHistory(String lessonId) {
@@ -104,14 +147,14 @@ public class HttpAPI {
         return null;
     }
 
-    public static CourseLessonDetail getCourseLessonDetail(String courseId, String courseName) {
-        String url = MessageFormat.format(COURSE_DETAIL_API, courseId);
-        log.debug("获取课程详情URL:【{}】url：{}", courseId, url);
+    public static CourseLessonDetail getCourseLessonDetail(String lessonId, String lessonName) {
+        String url = MessageFormat.format(COURSE_DETAIL_API, lessonId);
+        log.debug("获取课程详情URL:【{}】url：{}", lessonId, url);
         String videoJson = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
         JSONObject json = JSON.parseObject(videoJson);
         Integer state = json.getInteger("state");
         if (state != null && state != 1) {
-            log.info("获取视频视频信息失败:【{}】,json：{}", courseName, videoJson);
+            log.info("获取视频视频信息失败:【{}】,json：{}", lessonName, videoJson);
             throw new RuntimeException("获取视频信息失败:" + json.getString("message"));
         }
         JSONObject result = json.getJSONObject("content");
