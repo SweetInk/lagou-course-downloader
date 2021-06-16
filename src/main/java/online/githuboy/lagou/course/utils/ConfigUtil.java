@@ -9,6 +9,7 @@ import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class ConfigUtil {
@@ -46,7 +47,7 @@ public class ConfigUtil {
         String[] split = StringUtils.split(properties1, ",");
         Set<String> set = ArrayUtils.isEmpty(split) ? new HashSet<>() : new HashSet<>(Arrays.asList(split));
         set.add(String.valueOf(courseId));
-        String join = String.join(",", set);
+        String join = String.join(",", set.stream().map(String::trim).collect(Collectors.toSet()));
         properties.setProperty("remove_course", join);
 
         URL resource = ConfigUtil.class.getClassLoader().getResource("config/config.properties");
@@ -78,7 +79,7 @@ public class ConfigUtil {
         String[] split = StringUtils.split(properties1, ",");
         Set<String> set = ArrayUtils.isEmpty(split) ? new HashSet<>() : new HashSet<>(Arrays.asList(split));
         set.add(String.valueOf(courseId));
-        String join = String.join(",", set);
+        String join = set.stream().map(String::trim).collect(Collectors.joining(","));
         properties.setProperty("courseIds", join);
 
         URL resource = ConfigUtil.class.getClassLoader().getResource("config/config.properties");
@@ -98,22 +99,21 @@ public class ConfigUtil {
         String remove_course = readValue("remove_course");
         String[] split = StringUtils.split(remove_course, ",");
         Set<String> set = ArrayUtils.isEmpty(split) ? new HashSet<>() : new HashSet<>(Arrays.asList(split));
-        return set.contains(courseId);
+        return set.stream().map(String::trim).collect(Collectors.toSet()).contains(courseId);
     }
 
     public static Set<String> getDelCourse() {
         String remove_course = readValue("remove_course");
         String[] split = StringUtils.split(remove_course, ",");
         Set<String> set = ArrayUtils.isEmpty(split) ? new HashSet<>() : new HashSet<>(Arrays.asList(split));
-        return set;
+        return set.stream().map(String::trim).collect(Collectors.toSet());
     }
 
     public static List<String> getCourseIds() {
         String courseIds = readValue("courseIds");
         String[] split = StringUtils.split(courseIds, ",");
         Set<String> set = ArrayUtils.isEmpty(split) ? new HashSet<>() : new HashSet<>(Arrays.asList(split));
-        log.info("获取指定课程 列表：{}", set);
-        return new ArrayList<>(set);
+        return set.stream().map(String::trim).collect(Collectors.toList());
     }
 
     public static void main(String[] args) {

@@ -33,7 +33,22 @@ public class HttpAPI {
     public static CourseInfo getCourseInfo(String courseId) {
         String url = MessageFormat.format(COURSE_INFO_API, courseId);
         log.debug("获取课程:{}信息，url：{}", courseId, url);
-        String body = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
+        HttpRequest httpRequest = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}");
+
+        String body;
+        try {
+            body = httpRequest.execute().body();
+        } catch (Exception e) {
+            try {
+                Thread.sleep(RandomUtil.randomLong(500L,
+                        TimeUnit.SECONDS.toMillis(1)));
+            } catch (InterruptedException interruptedException) {
+                log.error(interruptedException.getMessage(), interruptedException);
+            }
+            log.info("获取课程 重试1次");
+            body = httpRequest.execute().body();
+        }
+
         JSONObject jsonObject = JSON.parseObject(body);
         if (jsonObject.getInteger("state") != 1) throw new RuntimeException("获取课程信息失败:" + body);
         return jsonObject.getJSONObject("content").toJavaObject(CourseInfo.class);
@@ -48,8 +63,8 @@ public class HttpAPI {
             body = httpRequest.execute().body();
         } catch (Exception e) {
             try {
-                Thread.sleep(RandomUtil.randomLong(TimeUnit.SECONDS.toMillis(1),
-                        TimeUnit.SECONDS.toMillis(2)));
+                Thread.sleep(RandomUtil.randomLong(500L,
+                        TimeUnit.SECONDS.toMillis(1)));
             } catch (InterruptedException interruptedException) {
                 log.error(interruptedException.getMessage(), interruptedException);
             }

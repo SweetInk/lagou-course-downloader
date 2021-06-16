@@ -3,7 +3,7 @@ package online.githuboy.lagou.course.task;
 import cn.hutool.core.io.StreamProgress;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpUtil;
 import lombok.Builder;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -74,7 +74,7 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
             }
         }
         File mp4File = new File(workDir, "[" + lessonId + "] " + FileUtils.getCorrectFileName(videoName) + ".!mp4");
-        HttpRequest.get(playUrl).execute(true).writeBody(mp4File, new StreamProgress() {
+        HttpUtil.downloadFile(playUrl, mp4File, 5 * 60 * 1000, new StreamProgress() {
             @Override
             public void start() {
                 log.info("开始下载视频【{}】lessonId={}", videoName, lessonId);
@@ -110,7 +110,7 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
         retryCount += 1;
         log.info("第:{}次重试获取:{}", retryCount, videoName);
         try {
-            Thread.sleep(RandomUtil.randomLong(TimeUnit.SECONDS.toMillis(1),
+            Thread.sleep(RandomUtil.randomLong(500L,
                     TimeUnit.SECONDS.toMillis(2)));
         } catch (InterruptedException e1) {
             log.error("线程休眠异常", e1);

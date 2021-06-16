@@ -11,6 +11,7 @@ import online.githuboy.lagou.course.utils.ConfigUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -36,6 +37,11 @@ public class App {
                 ConfigUtil.getCourseIds() :
                 Course.getAllCoursePurchasedRecordForPC();
 
+        log.info("开始下载课程 专栏ID列表：{}", allCoursePurchasedRecordForPC);
+
+        //倒叙
+        //Collections.reverse(allCoursePurchasedRecordForPC);
+
         allCoursePurchasedRecordForPC.removeAll(ConfigUtil.getDelCourse());
 
         //视频保存的目录
@@ -46,10 +52,14 @@ public class App {
         for (String courseId : allCoursePurchasedRecordForPC) {
             Downloader downloader = new Downloader(courseId, savePath,
                     DownloadType.loadByCode(Integer.valueOf(ConfigUtil.readValue("downloadType"))));
-            downloader.start();
-            log.info("\n\n\n");
-            log.info("开始下载{}课程", i++);
+            try {
+                downloader.start();
+                log.info("\n\n\n");
+                log.info("开始下载{}课程", i++);
 //            Thread.sleep(5000);
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
         }
         log.info("\n====>程序运行完成");
         ExecutorService.tryTerminal();
