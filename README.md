@@ -5,6 +5,19 @@
 
 # 更新日志
 
+## 2021年6月17日
+
+- 修改配置读取方式，所有配置，在config.properties文件中填写
+- 改进代码，防止程序中断或者假死
+- 文章下载，支持精选留言
+- 支持配置下载类型，可以选择：0:下载视频 1:下载文章 3：同时下载视频和文章
+- 下载未完成的视频和文章，用!代替，防止视频下载不完整的情况
+- 视频名称和文章名称，增加课时Id前缀，方便排序
+- 部分接口增加重试功能
+- 增加课时列表信息统计文件
+- 下载视频，增加超时，防止下载卡死
+- 增加把文章单独提取到一个文件夹的功能
+
 ## 2021年6月01日
 
 - 阿里云私有加密视频下载解析
@@ -75,15 +88,10 @@ Lagou课程的视频现托管在阿里云，[相关文档](https://help.aliyun.c
 
     ![](http://ww1.sinaimg.cn/large/005ViNx8ly1g5mdhltkh8j31yy0mf11q.jpg)
 
-    把上图中Cookie值，复制粘贴到`CookieStore.java`中`cookie` 字段中.
+    把上图中Cookie值，复制粘贴到`config.properties`文件中`cookie` 字段里.
 
-    替换`App.java`代码中的`courseId`,`savePath`中的值为实际的值.
-```java
-    String courseId = "课程ID";
-    String savePath = "视频保存位置";
-    Downloader downloader = new Downloader(courseId, savePath);
-    downloader.start();
-```
+    替换`config.properties`文件中的`mp4_dir`中的值为实际的值.
+   
 5. 运行`App#main()` 方法.
 
 ## TODO
