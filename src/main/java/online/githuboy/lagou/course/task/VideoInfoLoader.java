@@ -167,7 +167,7 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
      * 分配普通的下载器
      */
     private void dispatch() {
-        PlayHistory playHistory = HttpAPI.playHistoryCache.get(lessonId);
+        PlayHistory playHistory = HttpAPI.getPlayHistory(lessonId);
         //阿里云私有加密
         if (playHistory.getEncryptMedia()) {
             AliyunVoDEncryptionMediaLoader m3U8 = new AliyunVoDEncryptionMediaLoader(playHistory.getAliPlayAuth(), videoName, basePath.getAbsolutePath(), playHistory.getFileId());

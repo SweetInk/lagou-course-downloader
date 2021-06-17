@@ -6,8 +6,6 @@ import cn.hutool.http.HttpRequest;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.LoadingCache;
 import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.decrypt.alibaba.AliyunApiUtils;
 import online.githuboy.lagou.course.domain.*;
@@ -32,16 +30,6 @@ public class HttpAPI {
     private static final String COURSE_DETAIL_API = "https://gate.lagou.com/v1/neirong/kaiwu/getCourseLessonDetail?lessonId={0}";
     private final static String COURSE_INFO_API = "https://gate.lagou.com/v1/neirong/kaiwu/getCourseLessons?courseId={0}";
     private final static String COURSE_COMMENT_LIST_API = "https://gate.lagou.com/v1/neirong/course/comment/getCourseCommentList?courseId={0}&lessonId={1}&pageNum={2}&needCount=true";
-
-    public final static LoadingCache<String, CourseInfo> courseInfoCache = Caffeine.newBuilder()
-            .expireAfterWrite(10, TimeUnit.MINUTES)
-            .maximumSize(100000L)
-            .build(HttpAPI::getCourseInfo);
-
-    public final static LoadingCache<String, PlayHistory> playHistoryCache = Caffeine.newBuilder()
-            .expireAfterWrite(10, TimeUnit.MINUTES)
-            .maximumSize(100000L)
-            .build(HttpAPI::getPlayHistory);
 
     public static CourseInfo getCourseInfo(String courseId) {
         String url = MessageFormat.format(COURSE_INFO_API, courseId);

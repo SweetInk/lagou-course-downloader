@@ -58,7 +58,7 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
     @Override
     protected void action() {
         initDir();
-        PlayHistory playHistory = HttpAPI.playHistoryCache.get(lessonId);
+        PlayHistory playHistory = HttpAPI.getPlayHistory(lessonId);
         //优先从拉钩视频平台获取可直接播放的URL
         String playUrl = HttpAPI.tryGetPlayUrlFromKaiwu(playHistory.getFileId());
         if (StrUtil.isBlank(playUrl)) {

@@ -100,7 +100,7 @@ public class Downloader {
     private List<LessonInfo> parseLessonInfo() {
         List<LessonInfo> lessonInfoList = new ArrayList<>();
         // TODO retry
-        CourseInfo courseInfo = HttpAPI.courseInfoCache.get(this.courseId);
+        CourseInfo courseInfo = HttpAPI.getCourseInfo(this.courseId);
         courseName = courseInfo.getCourseName();
         this.basePath = new File(savePath, this.courseId + "_" + courseName);
         if (!basePath.exists()) {
