@@ -1,6 +1,8 @@
 package online.githuboy.lagou.course.support;
 
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.domain.CourseInfo;
@@ -8,14 +10,14 @@ import online.githuboy.lagou.course.domain.DownloadType;
 import online.githuboy.lagou.course.domain.LessonInfo;
 import online.githuboy.lagou.course.request.HttpAPI;
 import online.githuboy.lagou.course.task.VideoInfoLoader;
+import online.githuboy.lagou.course.utils.ConfigUtil;
 import online.githuboy.lagou.course.utils.ReadTxt;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -74,13 +76,19 @@ public class Downloader {
     }
 
     public void start() throws InterruptedException {
+        boolean b = ConfigUtil.checkDelCourse(courseId);
+        if (b) {
+            log.info("{} : {} {}", courseId, courseName, "是排除课程");
+            return;
+        }
         start = System.currentTimeMillis();
         List<LessonInfo> lessons = parseLessonInfo();
         if (!CollectionUtil.isEmpty(lessons)) {
-            int i = parseVideoInfo(lessons, this.downloadType);
+            int i = parseVideoInfo(courseId, lessons, this.downloadType);
             if (i > 0) {
                 downloadMedia(i);
             } else {
+                //ConfigUtil.addCourse(courseId);
                 log.info("===>《{}》所有课程都下载完成了", courseName);
             }
         }
@@ -108,6 +116,10 @@ public class Downloader {
             log.error("《{}》课程为空", courseName);
             return Collections.emptyList();
         }
+
+        StringBuilder sb = new StringBuilder();
+        Map<String, AtomicInteger> map = new HashMap();
+
         log.info("====>正在下载《{}》 courseId={}", courseName, this.courseId);
         for (CourseInfo.Section section : courseInfo.getCourseSectionList()) {
             if (!CollectionUtil.isEmpty(section.getCourseLessons())) {
@@ -115,14 +127,33 @@ public class Downloader {
                         .getCourseLessons()
                         .stream()
                         .filter(lesson -> {
+                            StringJoiner sj = new StringJoiner("  ||  ");
+                            sj.add(lesson.getId().toString());
+
+                            String statusName = StringUtils.replace(lesson.getStatus(), "UNRELEASE", "没有发布");
+                            statusName = StringUtils.replace(statusName, "RELEASE", "已发布");
+                            sj.add(statusName);
+
+                            AtomicInteger count = map.get(statusName);
+                            count = Objects.isNull(count) ? new AtomicInteger(0) : count;
+                            count.incrementAndGet();
+                            map.put(statusName, count);
+
+                            sj.add(lesson.getTheme());
+                            sj.add(Optional.ofNullable(lesson.getVideoMediaDTO())
+                                    .orElse(new CourseInfo.VideoMedia()).getEncryptedFileId());
+
+                            sb.append(sj).append("\n");
+
                             if (!"RELEASE".equals(lesson.getStatus())) {
                                 log.info("课程:【{}】 [未发布]", lesson.getTheme());
                                 return false;
                             }
                             return true;
                         }).filter(lesson -> {
-                                    if (Mp4History.contains(lesson.getId() + "")) {
-                                        log.debug("课程【{}】已经下载过了", lesson.getTheme());
+                                    if (DocHistory.contains(lesson.getId() + "", lesson.getTheme(), courseId, courseName)
+                                            && Mp4History.contains(lesson.getId() + "",  lesson.getTheme(), courseId, courseName)) {
+                                        log.debug("课程视频和文章【{}】已经下载过了", lesson.getTheme());
                                         return false;
                                     }
                                     return true;
@@ -144,17 +175,35 @@ public class Downloader {
                 log.error("获取课程视频列表信息失败");
             }
         }
+
+        //保存课程信息到目录
+        try {
+            File file = new File(basePath, "课程列表信息.txt");
+            FileUtil.del(file);
+
+            StringJoiner sj1 = new StringJoiner("   ");
+            map.forEach((key, value) -> {
+                sj1.add(key + ": " + value.get());
+            });
+            sb.insert(0, sj1 + "\n\n");
+            IoUtil.writeUtf8(new FileOutputStream(file), true, sb);
+        } catch (IOException e) {
+            log.error("{}", e);
+        }
+
         return lessonInfoList;
     }
 
     /**
      * 解析课程得到视频信息
      *
+     *
+     * @param courseId
      * @param lessonInfoList
      * @param downloadType
      * @return
      */
-    private int parseVideoInfo(List<LessonInfo> lessonInfoList, DownloadType downloadType) {
+    private int parseVideoInfo(String courseId, List<LessonInfo> lessonInfoList, DownloadType downloadType) {
         AtomicInteger videoSize = new AtomicInteger();
         latch = new CountDownLatch(lessonInfoList.size());
         // 这里使用的线程安全的容器，否则多线程添加应该会出现问题. Vector的啊add()方法加了锁synchronized
@@ -162,18 +211,20 @@ public class Downloader {
         lessonInfoList.forEach(lessonInfo -> {
             String lessonId = lessonInfo.getLessonId();
             String lessonName = lessonInfo.getLessonName();
-            if (!Mp4History.contains(lessonId)) {
+            if (Mp4History.contains(lessonId, lessonName, courseId, courseName) && DocHistory.contains(lessonId, lessonName, courseId, courseName)) {
+                log.warn("课程【{}】已经下载过了", lessonName);
+                latch.countDown();
+                COUNTER.incrementAndGet();
+            } else {
                 videoSize.getAndIncrement();
-                VideoInfoLoader loader = new VideoInfoLoader(lessonName, lessonInfo.getAppId(), lessonInfo.getFileId(), lessonInfo.getFileUrl(), lessonId, downloadType);
+                VideoInfoLoader loader = new VideoInfoLoader(courseId, courseName, lessonId, lessonName,
+                        lessonInfo.getAppId(), lessonInfo.getFileId(),
+                        lessonInfo.getFileUrl(), downloadType);
                 loader.setMediaLoaders(mediaLoaders);
                 loader.setBasePath(this.basePath);
                 loader.setTextPath(this.textPath);
                 loader.setLatch(latch);
                 ExecutorService.execute(loader);
-            } else {
-                log.warn("课程【{}】已经下载过了", lessonName);
-                latch.countDown();
-                COUNTER.incrementAndGet();
             }
         });
         return videoSize.intValue();

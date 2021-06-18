@@ -1,8 +1,9 @@
 package online.githuboy.lagou.course.task;
 
 import cn.hutool.core.io.StreamProgress;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpUtil;
 import lombok.Builder;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -11,10 +12,12 @@ import online.githuboy.lagou.course.domain.AliyunVodPlayInfo;
 import online.githuboy.lagou.course.domain.PlayHistory;
 import online.githuboy.lagou.course.request.HttpAPI;
 import online.githuboy.lagou.course.support.*;
+import online.githuboy.lagou.course.utils.ConfigUtil;
 import online.githuboy.lagou.course.utils.FileUtils;
 
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * MP4下载器
@@ -71,7 +74,8 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
                 return;
             }
         }
-        HttpRequest.get(playUrl).execute(true).writeBody(new File(workDir, FileUtils.getCorrectFileName(videoName) + ".mp4"), new StreamProgress() {
+        File mp4File = new File(workDir, "[" + lessonId + "] " + FileUtils.getCorrectFileName(videoName) + ".!mp4");
+        HttpUtil.downloadFile(playUrl, mp4File, Integer.parseInt(ConfigUtil.readValue("mp4_download_timeout")) * 60 * 1000, new StreamProgress() {
             @Override
             public void start() {
                 log.info("开始下载视频【{}】lessonId={}", videoName, lessonId);
@@ -87,6 +91,7 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
                 Stats.remove(videoName);
                 Mp4History.append(lessonId);
                 long count = latch.getCount();
+                FileUtils.replaceFileName(mp4File, ".!mp4", ".mp4");
                 log.info("====>视频下载完成【{}】,耗时:{} s，剩余{}", videoName, (System.currentTimeMillis() - startTime) / 1000, count - 1);
                 latch.countDown();
             }
@@ -106,7 +111,8 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
         retryCount += 1;
         log.info("第:{}次重试获取:{}", retryCount, videoName);
         try {
-            Thread.sleep(200);
+            Thread.sleep(RandomUtil.randomLong(500L,
+                    TimeUnit.SECONDS.toMillis(2)));
         } catch (InterruptedException e1) {
             log.error("线程休眠异常", e1);
         }

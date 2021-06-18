@@ -6,6 +6,7 @@ import online.githuboy.lagou.course.support.CmdExecutor;
 import online.githuboy.lagou.course.support.CookieStore;
 import online.githuboy.lagou.course.support.ExecutorService;
 import online.githuboy.lagou.course.support.MediaLoader;
+import online.githuboy.lagou.course.utils.ConfigUtil;
 import online.githuboy.lagou.course.utils.FileUtils;
 import online.githuboy.lagou.course.utils.HttpUtils;
 
@@ -198,7 +199,8 @@ public class M3U8MediaLoader implements NamedTask, MediaLoader {
                 }
                 ExecutorService.execute(this);
             } else {
-                log.info(" video:{}最大重试结束:{}", fileName, maxRetryCount);
+                //ConfigUtil.addRetryCourse();
+                log.info(" video:{}  最大重试结束:{}", fileName, maxRetryCount);
             }
         }
     }

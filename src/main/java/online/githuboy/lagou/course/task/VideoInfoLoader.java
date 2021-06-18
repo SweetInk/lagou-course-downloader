@@ -2,19 +2,20 @@ package online.githuboy.lagou.course.task;
 
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import online.githuboy.lagou.course.domain.CourseCommentListInfo;
 import online.githuboy.lagou.course.domain.CourseLessonDetail;
 import online.githuboy.lagou.course.domain.DownloadType;
 import online.githuboy.lagou.course.domain.PlayHistory;
 import online.githuboy.lagou.course.request.HttpAPI;
-import online.githuboy.lagou.course.support.AbstractRetryTask;
-import online.githuboy.lagou.course.support.ExecutorService;
-import online.githuboy.lagou.course.support.MediaLoader;
+import online.githuboy.lagou.course.support.*;
 import online.githuboy.lagou.course.task.aliyunvod.AliyunVoDEncryptionMediaLoader;
 import online.githuboy.lagou.course.utils.FileUtils;
 
 import java.io.File;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
 
 import static online.githuboy.lagou.course.support.ExecutorService.COUNTER;
 
@@ -28,6 +29,8 @@ import static online.githuboy.lagou.course.support.ExecutorService.COUNTER;
 public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
     private final static int maxRetryCount = 3;
     private final String videoName;
+    private final String courseId;
+    private final String courseName;
     private final String appId;
     private final String fileId;
     private final String fileUrl;
@@ -58,20 +61,15 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
      */
     private DownloadType downloadType = DownloadType.VIDEO;
 
-    public VideoInfoLoader(String videoName, String appId, String fileId, String fileUrl, String lessonId) {
-        this.videoName = videoName;
+    public VideoInfoLoader(String courseId, String courseName, String lessonId, String lessonName,
+                           String appId, String fileId, String fileUrl, DownloadType downloadType) {
+        this.courseId = courseId;
+        this.courseName = courseName;
+        this.lessonId = lessonId;
+        this.videoName = lessonName;
         this.appId = appId;
         this.fileId = fileId;
         this.fileUrl = fileUrl;
-        this.lessonId = lessonId;
-    }
-
-    public VideoInfoLoader(String videoName, String appId, String fileId, String fileUrl, String lessonId, DownloadType downloadType) {
-        this.videoName = videoName;
-        this.appId = appId;
-        this.fileId = fileId;
-        this.fileUrl = fileUrl;
-        this.lessonId = lessonId;
         this.downloadType = downloadType;
     }
 
@@ -104,6 +102,42 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
     @Override
     public void action() {
         CourseLessonDetail courseDetail = HttpAPI.getCourseLessonDetail(lessonId, videoName);
+        List<CourseCommentListInfo.CourseCommentList> courseCommentList = HttpAPI.getCourseCommentList(courseId, lessonId);
+        //下载视频
+        if (DownloadType.needText(this.downloadType) && !Mp4History.contains(lessonId, videoName, courseId, courseName)) {
+            downMp4(courseDetail);
+        }
+        // 下载文档
+        if (DownloadType.needText(this.downloadType) && !DocHistory.contains(lessonId, videoName, courseId, courseName)) {
+            String textContent = courseDetail.getTextContent();
+            if (textContent != null) {
+
+                String commentContent = courseCommentList.stream().map(courseComment -> {
+                    String text = String.format("##### %s：\n> %s\n",
+                            courseComment.getNickName(), courseComment.getComment());
+                    CourseCommentListInfo.CourseCommentList replayComment = courseComment.getReplayComment();
+                    if (Objects.nonNull(replayComment)) {
+                        text = text + String.format("\n ###### &nbsp;&nbsp;&nbsp; %s：\n> &nbsp;&nbsp;&nbsp; %s\n", replayComment.getNickName(), replayComment.getComment());
+                    }
+                    return text;
+                })
+                        .collect(Collectors.joining("\n"));
+                commentContent = "\n\n---\n\n### 精选评论\n\n" + commentContent + "\n";
+
+                //追加精选留言类型
+                textContent += commentContent;
+
+                String textFileName = "[" + lessonId + "] " + FileUtils.getCorrectFileName(videoName) + ".!md";
+                FileUtils.writeFile(textPath, textFileName, textContent);
+                FileUtils.replaceFileName(new File(textPath.getPath() + File.separator + textFileName), ".!md", ".md");
+                DocHistory.append(lessonId);
+            }
+        }
+        // 不可以移动到finally中调用
+        latch.countDown();
+    }
+
+    public void downMp4(CourseLessonDetail courseDetail) {
         String status = courseDetail.getStatus();
         if (UNRELEASE.equals(status)) {
             log.info("视频:【{}】待更新", videoName);
@@ -112,30 +146,21 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
             return;
         }
         CourseLessonDetail.VideoMedia videoMedia = courseDetail.getVideoMedia();
-        if (videoMedia != null) {
-            String m3u8Url = videoMedia.getFileUrl();
-            if (m3u8Url != null) {
-                log.info("获取视频:【{}】m3u8播放地址成功:{}", videoName, m3u8Url);
-            }
-            if (!forceDownloadMp4) {
-                dispatch();
-            } else {
-                MP4Downloader mp4Downloader = MP4Downloader.builder().appId(appId).basePath(basePath.getAbsoluteFile()).videoName(videoName).fileId(fileId).lessonId(lessonId).build();
-                mediaLoaders.add(mp4Downloader);
-            }
-        } else {
+        if (videoMedia == null) {
             log.warn("视频信息获取失败{}", videoName);
+            return;
         }
-        // 下载文档
-        if (this.downloadType == DownloadType.ALL) {
-            String textContent = courseDetail.getTextContent();
-            if (textContent != null) {
-                String textFileName = FileUtils.getCorrectFileName(videoName) + ".md";
-                FileUtils.writeFile(textPath, textFileName, textContent);
-            }
+
+        String m3u8Url = videoMedia.getFileUrl();
+        if (m3u8Url != null) {
+            log.info("获取视频:【{}】m3u8播放地址成功:{}", videoName, m3u8Url);
         }
-        // 不可以移动到finally中调用
-        latch.countDown();
+        if (!forceDownloadMp4) {
+            dispatch();
+        } else {
+            MP4Downloader mp4Downloader = MP4Downloader.builder().appId(appId).basePath(basePath.getAbsoluteFile()).videoName(videoName).fileId(fileId).lessonId(lessonId).build();
+            mediaLoaders.add(mp4Downloader);
+        }
     }
 
     /**

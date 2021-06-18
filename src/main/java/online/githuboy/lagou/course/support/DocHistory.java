@@ -4,6 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import online.githuboy.lagou.course.utils.ConfigUtil;
 import online.githuboy.lagou.course.utils.FileUtils;
 import online.githuboy.lagou.course.utils.ReadTxt;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.util.HashSet;
@@ -14,14 +15,14 @@ import java.util.Set;
  *
  * @author eric
  */
-public class Mp4History {
+public class DocHistory {
 
     private static volatile Set<String> historySet = new HashSet<>();
 
     /**
      * 记录已经下载过的视频id，不要重复下载了。
      */
-    static String filePath = "mp4.txt";
+    static String filePath = "doc.txt";
 
     static {
         loadHistory();
@@ -30,11 +31,11 @@ public class Mp4History {
     /**
      * 下载完成之后追加到历史文件
      *
-     * @param mp4Id
+     * @param lessonId
      */
-    public static void append(String mp4Id) {
-        historySet.add(mp4Id);
-        new ReadTxt().writeFile(filePath, mp4Id);
+    public static void append(String lessonId) {
+        historySet.add(lessonId);
+        new ReadTxt().writeFile(filePath, lessonId);
     }
 
     public static Set<String> loadHistory() {
@@ -44,7 +45,6 @@ public class Mp4History {
     }
 
     public static boolean contains(String lessonId, String lessonName, String courseId, String courseName) {
-
         String savePath = ConfigUtil.readValue("mp4_dir");
 
         //courseName = FileUtils.getCorrectFileName(courseName);
@@ -53,11 +53,11 @@ public class Mp4History {
 
         String path = String.join(File.separator,
                 savePath,
-                courseId + "_" + courseName,
-                "[" + lessonId + "] " + lessonName + ".mp4");
+                courseId + "_" + courseName + File.separator + "文档",
+                "[" + lessonId + "] " + lessonName + ".md");
         boolean exist = FileUtil.exist(path);
 
-        //return historySet.contains(id) && exist;
+        //return historySet.contains(lessonId) && exist;
         return exist;
     }
 

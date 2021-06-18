@@ -2,3 +2,10 @@
 *.iml
 target/
 *.log
+.gradle
+gradlew
+gradlew.bat
+*.log
+doc.txt
+mp4.txt
+gradle

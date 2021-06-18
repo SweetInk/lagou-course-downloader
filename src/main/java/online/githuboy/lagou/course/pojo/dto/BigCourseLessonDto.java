@@ -13,6 +13,7 @@ public class BigCourseLessonDto {
     private String weekId;  // module
     private String dayId; // sub module
     private String lessonId;
+    private String lessonName;
     private String videoName;
     private String pathName;
     private String type;

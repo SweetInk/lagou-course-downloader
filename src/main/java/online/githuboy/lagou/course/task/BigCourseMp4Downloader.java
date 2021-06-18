@@ -8,6 +8,7 @@ import online.githuboy.lagou.course.support.ExecutorService;
 import online.githuboy.lagou.course.support.MediaLoader;
 import online.githuboy.lagou.course.support.Mp4History;
 import online.githuboy.lagou.course.support.Stats;
+import online.githuboy.lagou.course.utils.ConfigUtil;
 import online.githuboy.lagou.course.utils.FileUtils;
 
 import java.io.File;
@@ -44,7 +45,8 @@ public class BigCourseMp4Downloader implements Runnable, NamedTask, MediaLoader 
     public void run() {
         try {
             if (this.playUrl != null) {
-                HttpRequest.get(this.playUrl).execute(true).writeBody(new File(basePath, FileUtils.getCorrectFileName(videoName) + ".mp4"), new StreamProgress() {
+                File mp4File = new File(basePath, "[" + lessonId + "] " + FileUtils.getCorrectFileName(videoName) + ".!mp4");
+                HttpRequest.get(this.playUrl).timeout(Integer.parseInt(ConfigUtil.readValue("mp4_download_timeout")) * 60 * 1000).execute(true).writeBody(mp4File, new StreamProgress() {
                     @Override
                     public void start() {
                         log.info("开始下载视频【{}】lessonId={}", videoName, lessonId);
@@ -63,6 +65,7 @@ public class BigCourseMp4Downloader implements Runnable, NamedTask, MediaLoader 
                         Mp4History.append(lessonId);
                         latch.countDown();
                         long count = latch.getCount();
+                        FileUtils.replaceFileName(mp4File, ".!mp4", ".mp4");
                         log.info("====>视频下载完成【{}】,耗时:{} s，剩余{}", videoName, (System.currentTimeMillis() - startTime) / 1000, count);
                     }
                 });

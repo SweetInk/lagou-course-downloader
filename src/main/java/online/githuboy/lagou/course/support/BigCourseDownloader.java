@@ -213,7 +213,9 @@ public class BigCourseDownloader {
                                         if (ResourceType.MEDIA.equals(lessonInfoVo.getType()) || ResourceType.RESOURCE.equals(lessonInfoVo.getType())) {
                                             String lessonParentPath = this.savePath + File.separator + topPathName + File.separator + modulePathName + File.separator + subModulePathName;
                                             String videoName = (i + 1) + "_" + lessonInfoVo.getLessonId() + "_" + lessonInfoVo.getLessonName();
-                                            bigCourseLessonDtoList.add(new BigCourseLessonDto(this.courseId, stageId.toString(), weekId.toString(), dayId.toString(), lessonInfoVo.getLessonId().toString(), videoName, lessonParentPath, lessonInfoVo.getType(), lessonInfoVo.getResourceUrl()));
+                                            bigCourseLessonDtoList.add(new BigCourseLessonDto(this.courseId, stageId.toString(), weekId.toString(),
+                                                    dayId.toString(), lessonInfoVo.getLessonId().toString(), lessonInfoVo.getLessonName(), videoName,
+                                                    lessonParentPath, lessonInfoVo.getType(), lessonInfoVo.getResourceUrl()));
                                         }
                                     }
                                 }
@@ -233,7 +235,8 @@ public class BigCourseDownloader {
         this.mediaLoaders = new Vector<>();
 
         bigCourseLessonDtoList.forEach(lessonInfo -> {
-            if (!Mp4History.contains(lessonInfo.getLessonId())) {
+            //TODO 取出课程名称
+            if (!Mp4History.contains(lessonInfo.getLessonId(), lessonInfo.getLessonName(), courseId, null)) {
                 BigCourseVideoInfoLoader videoInfoLoader = new BigCourseVideoInfoLoader(lessonInfo.getVideoName(), lessonInfo.getCourseId(), lessonInfo.getWeekId(), lessonInfo.getDayId(), lessonInfo.getLessonId());
                 videoInfoLoader.setMediaLoaders(mediaLoaders);
                 videoInfoLoader.setBasePath(lessonInfo.getPathName());
