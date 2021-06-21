@@ -1,5 +1,6 @@
 package online.githuboy.lagou.course.task.aliyunvod;
 
+import cn.hutool.core.io.FileUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.decrypt.alibaba.EncryptUtils;
@@ -154,11 +155,17 @@ public class AliyunVoDEncryptionMediaLoader extends AbstractRetryTask implements
         try {
             hlsLatch.await();
             log.info("视频:{} HS 片段下载完成 total:{}", fileName, hsList.size());
-            CmdExecutor.executeCmd(this.baseFilePath, "ffmpeg", "-y", "-allowed_extensions", "ALL", "-i", "video_origin.m3u8", "-c", "copy", "-bsf:a", "aac_adtstoasc", fileName + ".mp4");
+            String mp4FileName = fileName + ".mp4";
+            File mp4File = new File(this.baseFilePath, mp4FileName);
+            CmdExecutor.executeCmd(this.baseFilePath, "ffmpeg", "-y", "-allowed_extensions", "ALL", "-i", "video_origin.m3u8", "-c", "copy", "-bsf:a", "aac_adtstoasc", mp4File.getName());
             log.info("视频:{} HS片段合并完成", fileName);
-            log.info("清理TS临时文件");
+            //移动MP4文件到课程根目录
+            FileUtil.move(mp4File, new File(this.baseFilePath.getParent(), mp4FileName), true);
+            //删除临时目录
+            FileUtil.del(this.baseFilePath);
+          /*  log.info("清理TS临时文件");
             FileUtils.delete(this.baseFilePath, ".ts");
-            FileUtils.delete(this.baseFilePath, ".m3u8");
+            FileUtils.delete(this.baseFilePath, ".m3u8");*/
         } catch (InterruptedException | IOException e) {
             e.printStackTrace();
         }
