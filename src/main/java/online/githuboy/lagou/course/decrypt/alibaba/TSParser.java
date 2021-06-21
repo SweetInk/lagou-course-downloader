@@ -1,5 +1,6 @@
 package online.githuboy.lagou.course.decrypt.alibaba;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.HexUtil;
 import cn.hutool.crypto.Mode;
@@ -328,13 +329,19 @@ public class TSParser {
         }
 
         public void dumpToFile(File file) throws IOException {
-            if (null != this.byteBuf) {
-                this.byteBuf.resetReaderIndex();
-                this.byteBuf.writerIndex(byteBuf.capacity());
-
-                if (!file.exists())
-                    file.createNewFile();
-                this.byteBuf.readBytes(new FileOutputStream(file), byteBuf.capacity());
+            OutputStream fos = FileUtil.getOutputStream(file);
+            try {
+                if (null != this.byteBuf) {
+                    this.byteBuf.resetReaderIndex();
+                    this.byteBuf.writerIndex(byteBuf.capacity());
+                    if (!file.exists())
+                        file.createNewFile();
+                    this.byteBuf.readBytes(fos, byteBuf.capacity());
+                }
+            } finally {
+                if (null != fos) {
+                    IoUtil.close(fos);
+                }
             }
         }
     }

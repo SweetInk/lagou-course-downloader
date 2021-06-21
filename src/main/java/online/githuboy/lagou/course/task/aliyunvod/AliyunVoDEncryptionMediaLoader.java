@@ -33,8 +33,8 @@ public class AliyunVoDEncryptionMediaLoader extends AbstractRetryTask implements
     private final String fileName;
     private final String fileId;
     private final String playAuth;
-    CountDownLatch latch;
-    CountDownLatch hlsLatch;
+    private CountDownLatch latch;
+    private CountDownLatch hlsLatch;
     private List<String> hsList;
     /**
      * m3u8文件内容
@@ -140,11 +140,11 @@ public class AliyunVoDEncryptionMediaLoader extends AbstractRetryTask implements
         hlsLatch = new CountDownLatch(hsList.size());
         List<String> localHsList = new ArrayList<>(hsList.size());
         hsList.forEach(hsUrl -> {
-            AliyunVodEncryptionHsDownloader downloader = new AliyunVodEncryptionHsDownloader(this, hsUrl, this.key);
-            downloader.setLatch(hlsLatch);
-            String fileName = downloader.getFileName();
+            AliyunVodEncryptionHsDownloader hsDownloader = new AliyunVodEncryptionHsDownloader(this, hsUrl, this.key);
+            hsDownloader.setLatch(hlsLatch);
+            String fileName = hsDownloader.getFileName();
             localHsList.add(fileName);
-            ExecutorService.getHlsExecutor().execute(downloader);
+            ExecutorService.getHlsExecutor().execute(hsDownloader);
         });
         mergeHsToMp4();
 
