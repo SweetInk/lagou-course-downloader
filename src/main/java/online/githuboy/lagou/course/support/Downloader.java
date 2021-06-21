@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.domain.CourseInfo;
 import online.githuboy.lagou.course.domain.DownloadType;
@@ -20,6 +21,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static online.githuboy.lagou.course.support.ExecutorService.COUNTER;
@@ -63,6 +65,8 @@ public class Downloader {
     private long start;
 
     private DownloadType downloadType = DownloadType.VIDEO;
+    @Setter
+    private Predicate<CourseInfo.Lesson> debugFilter = lesson -> true;
 
     public Downloader(String courseId, String savePath) {
         this.courseId = courseId;
@@ -126,10 +130,10 @@ public class Downloader {
                 List<LessonInfo> lessons = section
                         .getCourseLessons()
                         .stream()
+                        .filter(debugFilter)
                         .filter(lesson -> {
                             StringJoiner sj = new StringJoiner("  ||  ");
                             sj.add(lesson.getId().toString());
-
                             String statusName = StringUtils.replace(lesson.getStatus(), "UNRELEASE", "没有发布");
                             statusName = StringUtils.replace(statusName, "RELEASE", "已发布");
                             sj.add(statusName);
@@ -142,20 +146,18 @@ public class Downloader {
                             sj.add(lesson.getTheme());
                             sj.add(Optional.ofNullable(lesson.getVideoMediaDTO())
                                     .orElse(new CourseInfo.VideoMedia()).getEncryptedFileId());
-
                             sb.append(sj).append("\n");
-
                             if (!"RELEASE".equals(lesson.getStatus())) {
                                 log.info("课程:【{}】 [未发布]", lesson.getTheme());
                                 return false;
                             }
                             return true;
                         }).filter(lesson -> {
-                                    if (DocHistory.contains(lesson.getId() + "", lesson.getTheme(), courseId, courseName)
-                                            && Mp4History.contains(lesson.getId() + "",  lesson.getTheme(), courseId, courseName)) {
-                                        log.debug("课程视频和文章【{}】已经下载过了", lesson.getTheme());
-                                        return false;
-                                    }
+                            if (DocHistory.contains(lesson.getId() + "", lesson.getTheme(), courseId, courseName)
+                                    && Mp4History.contains(lesson.getId() + "", lesson.getTheme(), courseId, courseName)) {
+                                log.debug("课程视频和文章【{}】已经下载过了", lesson.getTheme());
+                                return false;
+                            }
                                     return true;
                                 }
                         ).map(lesson -> {
@@ -196,7 +198,6 @@ public class Downloader {
 
     /**
      * 解析课程得到视频信息
-     *
      *
      * @param courseId
      * @param lessonInfoList

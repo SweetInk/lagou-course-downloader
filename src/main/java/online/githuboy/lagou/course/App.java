@@ -2,16 +2,15 @@ package online.githuboy.lagou.course;
 
 import cn.hutool.core.collection.CollectionUtil;
 import lombok.extern.slf4j.Slf4j;
+import online.githuboy.lagou.course.domain.DownloadType;
 import online.githuboy.lagou.course.support.CmdExecutor;
 import online.githuboy.lagou.course.support.Course;
 import online.githuboy.lagou.course.support.Downloader;
 import online.githuboy.lagou.course.support.ExecutorService;
-import online.githuboy.lagou.course.domain.DownloadType;
 import online.githuboy.lagou.course.utils.ConfigUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -52,6 +51,8 @@ public class App {
         for (String courseId : allCoursePurchasedRecordForPC) {
             Downloader downloader = new Downloader(courseId, savePath,
                     DownloadType.loadByCode(Integer.valueOf(ConfigUtil.readValue("downloadType"))));
+            // 这里可以增加你的调试代码，下载指定的lesson
+            //downloader.setDebugFilter(lesson -> lesson.getId().equals(7698));
             try {
                 downloader.start();
                 log.info("\n\n\n");
