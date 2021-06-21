@@ -71,7 +71,7 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
                 return;
             }
         }
-        File mp4File = new File(workDir, "[" + lessonId + "] " + FileUtils.getCorrectFileName(videoName) + ".!mp4");
+        File mp4File = new File(workDir, FileUtils.getCorrectFileName(videoName) + ".!mp4");
         fileDownloadFinishedLatch = new CountDownLatch(1);
         try {
             HttpUtil.downloadFile(playUrl, mp4File, Integer.parseInt(ConfigUtil.readValue("mp4_download_timeout")) * 60 * 1000, new StreamProgress() {

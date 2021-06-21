@@ -1,5 +1,7 @@
 package online.githuboy.lagou.course.support;
 
+import lombok.Setter;
+
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -13,6 +15,17 @@ public interface MediaLoader extends Runnable {
      * @param latch
      */
     default void setLatch(CountDownLatch latch) {
+    }
+
+    class EmptyMediaLoader implements MediaLoader {
+        @Setter
+        private CountDownLatch latch;
+
+        @Override
+        public void run() {
+            latch.countDown();
+        }
+
     }
 
 }

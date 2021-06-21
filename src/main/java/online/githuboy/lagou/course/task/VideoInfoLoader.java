@@ -29,6 +29,7 @@ import static online.githuboy.lagou.course.support.ExecutorService.COUNTER;
 public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
     private final static int maxRetryCount = 3;
     private final String videoName;
+    private final String newVideoName;
     private final String courseId;
     private final String courseName;
     private final String appId;
@@ -50,6 +51,7 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
     @Setter
     private List<MediaLoader> mediaLoaders;
 
+    //解析所有课程meta信息的Latch
     @Setter
     private CountDownLatch latch;
 
@@ -67,6 +69,7 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
         this.courseName = courseName;
         this.lessonId = lessonId;
         this.videoName = lessonName;
+        this.newVideoName = "[" + lessonId + "] " + lessonName;
         this.appId = appId;
         this.fileId = fileId;
         this.fileUrl = fileUrl;
@@ -104,8 +107,10 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
         CourseLessonDetail courseDetail = HttpAPI.getCourseLessonDetail(lessonId, videoName);
         List<CourseCommentListInfo.CourseCommentList> courseCommentList = HttpAPI.getCourseCommentList(courseId, lessonId);
         //下载视频
-        if (DownloadType.needText(this.downloadType) && !Mp4History.contains(lessonId, videoName, courseId, courseName)) {
+        if (DownloadType.needVideo(this.downloadType) && !Mp4History.contains(lessonId, videoName, courseId, courseName)) {
             downMp4(courseDetail);
+        } else {
+            mediaLoaders.add(new MediaLoader.EmptyMediaLoader());
         }
         // 下载文档
         if (DownloadType.needText(this.downloadType) && !DocHistory.contains(lessonId, videoName, courseId, courseName)) {
@@ -140,25 +145,24 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
     public void downMp4(CourseLessonDetail courseDetail) {
         String status = courseDetail.getStatus();
         if (UNRELEASE.equals(status)) {
-            log.info("视频:【{}】待更新", videoName);
-            latch.countDown();
+            log.info("视频:【{}】待更新", newVideoName);
             COUNTER.incrementAndGet();
             return;
         }
         CourseLessonDetail.VideoMedia videoMedia = courseDetail.getVideoMedia();
         if (videoMedia == null) {
-            log.warn("视频信息获取失败{}", videoName);
+            log.warn("视频信息获取失败{}", newVideoName);
             return;
         }
 
         String m3u8Url = videoMedia.getFileUrl();
         if (m3u8Url != null) {
-            log.info("获取视频:【{}】m3u8播放地址成功:{}", videoName, m3u8Url);
+            log.info("获取视频:【{}】m3u8播放地址成功:{}", newVideoName, m3u8Url);
         }
         if (!forceDownloadMp4) {
             dispatch();
         } else {
-            MP4Downloader mp4Downloader = MP4Downloader.builder().appId(appId).basePath(basePath.getAbsoluteFile()).videoName(videoName).fileId(fileId).lessonId(lessonId).build();
+            MP4Downloader mp4Downloader = MP4Downloader.builder().appId(appId).basePath(basePath.getAbsoluteFile()).videoName(newVideoName).fileId(fileId).lessonId(lessonId).build();
             mediaLoaders.add(mp4Downloader);
         }
     }
@@ -170,10 +174,10 @@ public class VideoInfoLoader extends AbstractRetryTask implements NamedTask {
         PlayHistory playHistory = HttpAPI.getPlayHistory(lessonId);
         //阿里云私有加密
         if (playHistory.getEncryptMedia()) {
-            AliyunVoDEncryptionMediaLoader m3U8 = new AliyunVoDEncryptionMediaLoader(playHistory.getAliPlayAuth(), videoName, basePath.getAbsolutePath(), playHistory.getFileId());
-            mediaLoaders.add(m3U8);
+            AliyunVoDEncryptionMediaLoader m3u8 = new AliyunVoDEncryptionMediaLoader(playHistory.getAliPlayAuth(), newVideoName, basePath.getAbsolutePath(), playHistory.getFileId());
+            mediaLoaders.add(m3u8);
         } else {
-            MP4Downloader mp4Downloader = MP4Downloader.builder().appId(appId).basePath(basePath.getAbsoluteFile()).videoName(videoName).fileId(fileId).lessonId(lessonId).build();
+            MP4Downloader mp4Downloader = MP4Downloader.builder().appId(appId).basePath(basePath.getAbsoluteFile()).videoName(newVideoName).fileId(fileId).lessonId(lessonId).build();
             mediaLoaders.add(mp4Downloader);
         }
     }
