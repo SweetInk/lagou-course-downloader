@@ -60,7 +60,10 @@ public class FileUtils {
         File destFile = new File(StringUtils.replace(file.getPath(), searchStr, destStr));
         try {
             Files.deleteIfExists(destFile.toPath());
-            file.renameTo(destFile);
+            boolean b = file.renameTo(destFile);
+            if (!b) {
+                log.error("文件重命名失败:{}", file.getName());
+            }
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }

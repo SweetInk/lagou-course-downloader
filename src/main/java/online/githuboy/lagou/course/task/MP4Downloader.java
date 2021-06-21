@@ -42,17 +42,14 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
     private File basePath;
 
     private File workDir;
+    //所有下载任务的Latch
     @Setter
     private CountDownLatch latch;
+    private CountDownLatch fileDownloadFinishedLatch;
     private volatile long startTime = 0;
 
     private void initDir() {
-        String fileName = FileUtils.getCorrectFileName(videoName);
         workDir = basePath;
-//        workDir = new File(basePath, fileName.replaceAll("/", "_") + "_" + lessonId);
-//        if (!workDir.exists()) {
-//            workDir.mkdirs();
-//        }
     }
 
     @Override
@@ -75,27 +72,38 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
             }
         }
         File mp4File = new File(workDir, "[" + lessonId + "] " + FileUtils.getCorrectFileName(videoName) + ".!mp4");
-        HttpUtil.downloadFile(playUrl, mp4File, Integer.parseInt(ConfigUtil.readValue("mp4_download_timeout")) * 60 * 1000, new StreamProgress() {
-            @Override
-            public void start() {
-                log.info("开始下载视频【{}】lessonId={}", videoName, lessonId);
-                if (startTime == 0) {
-                    startTime = System.currentTimeMillis();
+        fileDownloadFinishedLatch = new CountDownLatch(1);
+        try {
+            HttpUtil.downloadFile(playUrl, mp4File, Integer.parseInt(ConfigUtil.readValue("mp4_download_timeout")) * 60 * 1000, new StreamProgress() {
+                @Override
+                public void start() {
+                    log.info("开始下载视频【{}】lessonId={}", videoName, lessonId);
+                    if (startTime == 0) {
+                        startTime = System.currentTimeMillis();
+                    }
                 }
-            }
-            @Override
-            public void progress(long l) {
-            }
-            @Override
-            public void finish() {
-                Stats.remove(videoName);
-                Mp4History.append(lessonId);
-                long count = latch.getCount();
-                FileUtils.replaceFileName(mp4File, ".!mp4", ".mp4");
-                log.info("====>视频下载完成【{}】,耗时:{} s，剩余{}", videoName, (System.currentTimeMillis() - startTime) / 1000, count - 1);
-                latch.countDown();
-            }
-        });
+
+                @Override
+                public void progress(long l) {
+                }
+
+                @Override
+                public void finish() {
+                    fileDownloadFinishedLatch.countDown();
+                }
+            });
+            fileDownloadFinishedLatch.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Thread interrupted", e);
+        } finally {
+            fileDownloadFinishedLatch.countDown();
+        }
+        Stats.remove(videoName);
+        Mp4History.append(lessonId);
+        long count = latch.getCount();
+        FileUtils.replaceFileName(mp4File, ".!mp4", ".mp4");
+        log.info("====>视频下载完成【{}】,耗时:{} s，剩余{}", videoName, (System.currentTimeMillis() - startTime) / 1000, count - 1);
+        latch.countDown();
     }
 
     @Override
