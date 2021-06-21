@@ -1,98 +1,44 @@
 package online.githuboy.lagou.course.utils;
 
-import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.util.CharsetUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.setting.Setting;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.*;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class ConfigUtil {
+    private final static Setting settings = new Setting("config/config.properties", CharsetUtil.CHARSET_UTF_8, true);
 
-    public static String readValue(String key){
-        Properties properties = new Properties();
-        InputStream inputStream = ConfigUtil.class.getClassLoader().getResourceAsStream("config/config.properties");
-        try (InputStreamReader isr = new InputStreamReader(inputStream, "UTF-8");
-             BufferedReader br = new BufferedReader(isr);
-        ){
-            // 一定一定要 load 设置编码后的字符流
-            properties.load(br);
-            return properties.getProperty(key);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-
-        }
-        return "";
+    public static String readValue(String key) {
+        return settings.getStr(key, "");
     }
 
     public static void addDelCourse(String courseId) {
-        Properties properties = new Properties();
-        InputStream inputStream = ConfigUtil.class.getClassLoader().getResourceAsStream("config/config.properties");
-        try (InputStreamReader isr = new InputStreamReader(inputStream, "UTF-8");
-             BufferedReader br = new BufferedReader(isr);
-        ){
-            // 一定一定要 load 设置编码后的字符流
-            properties.load(br);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        String removeCourseStr = readValue("remove_course");
+        String[] splitStr = StrUtil.split(removeCourseStr, ",");
+        Set<String> courseIdSet = Arrays.stream(splitStr).collect(Collectors.toSet());
+        courseIdSet.add(courseId);
+        String courseIdStr = String.join(",", courseIdSet);
+        settings.set("remove_course", courseIdStr);
+        settings.store();
 
-        String properties1 = properties.getProperty("remove_course");
-        String[] split = StringUtils.split(properties1, ",");
-        Set<String> set = ArrayUtils.isEmpty(split) ? new HashSet<>() : new HashSet<>(Arrays.asList(split));
-        set.add(String.valueOf(courseId));
-        String join = String.join(",", set.stream().map(String::trim).collect(Collectors.toSet()));
-        properties.setProperty("remove_course", join);
-
-        URL resource = ConfigUtil.class.getClassLoader().getResource("config/config.properties");
-        try (FileOutputStream fos = new FileOutputStream(new File(resource.toURI()))){
-            properties.store(fos,"danciben");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        } finally {
-        }
     }
 
     public static void addRetryCourse(String courseId) {
-        Properties properties = new Properties();
-        InputStream inputStream = ConfigUtil.class.getClassLoader().getResourceAsStream("config/config.properties");
-        try (InputStreamReader isr = new InputStreamReader(inputStream, "UTF-8");
-             BufferedReader br = new BufferedReader(isr);
-        ){
-            // 一定一定要 load 设置编码后的字符流
-            properties.load(br);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        String properties1 = properties.getProperty("courseIds");
-        String[] split = StringUtils.split(properties1, ",");
-        Set<String> set = ArrayUtils.isEmpty(split) ? new HashSet<>() : new HashSet<>(Arrays.asList(split));
-        set.add(String.valueOf(courseId));
-        String join = set.stream().map(String::trim).collect(Collectors.joining(","));
-        properties.setProperty("courseIds", join);
-
-        URL resource = ConfigUtil.class.getClassLoader().getResource("config/config.properties");
-        try (FileOutputStream fos = new FileOutputStream(new File(resource.toURI()))){
-            properties.store(fos,"danciben");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        } finally {
-        }
+        String courseIds = readValue("courseIds");
+        Set<String> courseIdSet = Arrays.stream(StrUtil.split(courseIds, ",")).map(String::trim).collect(Collectors.toSet());
+        courseIdSet.add(courseId);
+        String courseIdsStr = String.join(",", courseIdSet);
+        settings.set("courseIds", courseIdsStr);
+        settings.store();
     }
 
     public static boolean checkDelCourse(String courseId) {
@@ -118,6 +64,8 @@ public class ConfigUtil {
 
     public static void main(String[] args) {
         System.out.println(ConfigUtil.readValue("mp4_dir"));
+        System.out.println(ConfigUtil.readValue("cookie"));
+
     }
 
 }

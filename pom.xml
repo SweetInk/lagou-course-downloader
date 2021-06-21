@@ -20,6 +20,11 @@
         </dependency>
         <dependency>
             <groupId>cn.hutool</groupId>
+            <artifactId>hutool-setting</artifactId>
+            <version>5.6.1</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
             <artifactId>hutool-crypto</artifactId>
             <version>5.6.1</version>
         </dependency>
