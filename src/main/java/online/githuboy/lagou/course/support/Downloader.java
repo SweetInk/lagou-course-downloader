@@ -265,12 +265,6 @@ public class Downloader {
         long end = System.currentTimeMillis();
         log.info("《{}》所有视频处理耗时:{} s", courseName, (end - start) / 1000);
         log.info("《{}》视频输出目录:{}\n\n", courseName, this.basePath.getAbsolutePath());
-        File file = new File(basePath, "下载完成.txt");
-        try {
-            file.createNewFile();
-        } catch (IOException e) {
-            log.error("{}", e);
-        }
         if (!Stats.isEmpty()) {
             log.info("\n\n失败统计信息\n\n");
             Stats.failedCount.forEach((key, value) -> System.out.println(key + " -> " + value.get()));

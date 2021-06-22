@@ -121,7 +121,11 @@ public class HttpAPI {
     }
 
     public static AliyunVodPlayInfo getVodPlayerInfo(String rand, String playAuth, String fileId) {
-        String playInfoRequestUrl = AliyunApiUtils.getPlayInfoRequestUrl(rand, playAuth, fileId);
+        return getVodPlayerInfo(rand, playAuth, fileId, "");
+    }
+
+    public static AliyunVodPlayInfo getVodPlayerInfo(String rand, String playAuth, String fileId, String formats) {
+        String playInfoRequestUrl = AliyunApiUtils.getPlayInfoRequestUrl(rand, playAuth, fileId, formats);
         String response = HttpRequest.get(playInfoRequestUrl).execute().body();
         log.debug("\nAliyun API request result:\n\n" + response);
         JSONObject mediaObj = JSON.parseObject(response);

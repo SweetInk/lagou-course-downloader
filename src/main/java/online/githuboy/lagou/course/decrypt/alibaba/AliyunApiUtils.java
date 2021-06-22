@@ -36,11 +36,11 @@ public class AliyunApiUtils {
     }
 
     public static String getPlayInfoRequestUrl(String aliPlayAuth, String fileId) {
-        return getPlayInfoRequestUrl("", aliPlayAuth, fileId);
+        return getPlayInfoRequestUrl("", aliPlayAuth, fileId, "");
     }
 
     @SneakyThrows
-    public static String getPlayInfoRequestUrl(String rand, String aliPlayAuth, String fileId) {
+    public static String getPlayInfoRequestUrl(String rand, String aliPlayAuth, String fileId, String formats) {
         String playAuthStr = cn.hutool.core.codec.Base64.decodeStr(aliPlayAuth);
         PlayAuth playAuth = PlayAuth.from(playAuthStr);
         Map<String, String> publicParam = new HashMap<>();
@@ -55,8 +55,10 @@ public class AliyunApiUtils {
         publicParam.put("StreamType", "video");
         if (StrUtil.isNotBlank(rand))
             publicParam.put("Rand", rand);
-        publicParam.put("Formats", "");
-
+        if (StrUtil.isNotBlank(formats))
+            publicParam.put("Formats", formats);
+        else
+            publicParam.put("Formats", "");
         publicParam.put("Version", "2017-03-21");
 
         privateParam.put("Action", "GetPlayInfo");

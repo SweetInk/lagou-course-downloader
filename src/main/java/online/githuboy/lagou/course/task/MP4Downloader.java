@@ -58,13 +58,19 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
         PlayHistory playHistory = HttpAPI.getPlayHistory(lessonId);
         //优先从拉钩视频平台获取可直接播放的URL
         String playUrl = HttpAPI.tryGetPlayUrlFromKaiwu(playHistory.getFileId());
-        if (StrUtil.isBlank(playUrl)) {
+        if (!isMp4Url(playUrl)) {
             String rand = "test";
             String encryptRand = EncryptUtils.encryptRand(rand);
-            AliyunVodPlayInfo vodPlayerInfo = HttpAPI.getVodPlayerInfo(encryptRand, playHistory.getAliPlayAuth(), playHistory.getFileId());
+            AliyunVodPlayInfo vodPlayerInfo = HttpAPI.getVodPlayerInfo(encryptRand, playHistory.getAliPlayAuth(), playHistory.getFileId(), "mp4");
             if (null != vodPlayerInfo) {
                 playUrl = vodPlayerInfo.getPlayURL();
-                log.info("解析出【{}】MP4播放地址:{}", videoName, playUrl);
+                if (isMp4Url(playUrl)) {
+                    log.info("解析出【{}】MP4播放地址:{}", videoName, playUrl);
+                } else {
+                    log.warn("当前视频没有发现mp4播放地址,实际播放地址:{}", playUrl);
+                    latch.countDown();
+                    return;
+                }
             } else {
                 log.warn("没有获取到视频【{}】播放地址:", videoName);
                 latch.countDown();
@@ -132,5 +138,9 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
         super.retryComplete();
         log.error(" video:{}最大重试结束:{}", videoName, maxRetryCount);
         latch.countDown();
+    }
+
+    private boolean isMp4Url(String url) {
+        return StrUtil.isNotBlank(url) && url.contains(".mp4");
     }
 }
