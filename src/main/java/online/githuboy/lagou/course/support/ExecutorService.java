@@ -1,5 +1,6 @@
 package online.githuboy.lagou.course.support;
 
+import cn.hutool.core.thread.NamedThreadFactory;
 import online.githuboy.lagou.course.task.NamedTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +28,7 @@ public class ExecutorService {
 
     private final static TaskNamedThreadPoolExecutor hlsExecutor = new TaskNamedThreadPoolExecutor(16, 16,
             0L, TimeUnit.MILLISECONDS,
-            new LinkedBlockingQueue<>());
+            new LinkedBlockingQueue<>(), new NamedThreadFactory("ts-downloader", false));
 
     public static void execute(Runnable runnable) {
         executor.execute(runnable);
