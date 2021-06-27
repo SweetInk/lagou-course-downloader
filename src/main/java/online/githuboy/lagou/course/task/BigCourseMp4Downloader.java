@@ -4,10 +4,7 @@ import cn.hutool.core.io.StreamProgress;
 import cn.hutool.http.HttpRequest;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import online.githuboy.lagou.course.support.ExecutorService;
-import online.githuboy.lagou.course.support.MediaLoader;
-import online.githuboy.lagou.course.support.Mp4History;
-import online.githuboy.lagou.course.support.Stats;
+import online.githuboy.lagou.course.support.*;
 import online.githuboy.lagou.course.utils.ConfigUtil;
 import online.githuboy.lagou.course.utils.FileUtils;
 
@@ -21,15 +18,17 @@ import java.util.concurrent.CountDownLatch;
  * @since 2021年5月20日
  */
 @Slf4j
-public class BigCourseMp4Downloader implements Runnable, NamedTask, MediaLoader {
+public class BigCourseMp4Downloader extends AbstractRetryTask implements NamedTask, MediaLoader {
 
     private final static int MAX_RETRY_COUNT = 3;
     private final String videoName;
     private final String lessonId;
     private final String playUrl;
-    private volatile int retryCount = 0;
+    private int retryCount = 0;
     @Setter
     private String basePath;
+    private CountDownLatch fileDownloadFinishedLatch;
+
 
     @Setter
     private CountDownLatch latch;
@@ -42,10 +41,11 @@ public class BigCourseMp4Downloader implements Runnable, NamedTask, MediaLoader 
     }
 
     @Override
-    public void run() {
-        try {
-            if (this.playUrl != null) {
-                File mp4File = new File(basePath, "[" + lessonId + "] " + FileUtils.getCorrectFileName(videoName) + ".!mp4");
+    protected void action() {
+        if (this.playUrl != null) {
+            File mp4File = new File(basePath, "[" + lessonId + "] " + FileUtils.getCorrectFileName(videoName) + ".!mp4");
+            fileDownloadFinishedLatch = new CountDownLatch(1);
+            try {
                 HttpRequest.get(this.playUrl).timeout(Integer.parseInt(ConfigUtil.readValue("mp4_download_timeout")) * 60 * 1000).execute(true).writeBody(mp4File, new StreamProgress() {
                     @Override
                     public void start() {
@@ -61,35 +61,51 @@ public class BigCourseMp4Downloader implements Runnable, NamedTask, MediaLoader 
 
                     @Override
                     public void finish() {
-                        Stats.remove(videoName);
-                        Mp4History.append(lessonId);
-                        latch.countDown();
-                        long count = latch.getCount();
-                        FileUtils.replaceFileName(mp4File, ".!mp4", ".mp4");
-                        log.info("====>视频下载完成【{}】,耗时:{} s，剩余{}", videoName, (System.currentTimeMillis() - startTime) / 1000, count);
+                        fileDownloadFinishedLatch.countDown();
                     }
                 });
-
-            } else {
-                log.warn("没有获取到视频【{}】播放地址:", videoName);
-                latch.countDown();
+                fileDownloadFinishedLatch.await();
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Thread interrupted", e);
+            } finally {
+                fileDownloadFinishedLatch.countDown();
             }
-        } catch (Exception e) {
-            log.error("获取视频:{}信息失败:", videoName, e);
-            if (retryCount < MAX_RETRY_COUNT) {
-                Stats.incr(videoName);
-                retryCount += 1;
-                log.info("第:{}次重试获取:{}", retryCount, videoName);
-                try {
-                    Thread.sleep(200);
-                } catch (InterruptedException e1) {
-                    e1.printStackTrace();
-                }
-                ExecutorService.execute(this);
-            } else {
-                log.info(" video:{}最大重试结束:{}", videoName, MAX_RETRY_COUNT);
-                latch.countDown();
-            }
+            Stats.remove(videoName);
+            Mp4History.append(lessonId);
+            latch.countDown();
+            long count = latch.getCount();
+            FileUtils.replaceFileName(mp4File, ".!mp4", ".mp4");
+            log.info("====>视频下载完成【{}】,耗时:{} s，剩余{}", videoName, (System.currentTimeMillis() - startTime) / 1000, count);
+        } else {
+            log.warn("没有获取到视频【{}】播放地址:", videoName);
+            latch.countDown();
         }
     }
+
+    @Override
+    protected void retry(Throwable throwable) {
+        super.retry(throwable);
+        Stats.incr(videoName);
+        retryCount += 1;
+        log.info("第:{}次重试获取:{}", retryCount, videoName, throwable);
+        try {
+            Thread.sleep(200);
+        } catch (InterruptedException e1) {
+            e1.printStackTrace();
+        }
+        ExecutorService.execute(this);
+    }
+
+    @Override
+    public void retryComplete() {
+        super.retryComplete();
+        log.error(" video:{}最大重试结束:{}", videoName, MAX_RETRY_COUNT);
+        latch.countDown();
+    }
+
+    @Override
+    public boolean canRetry() {
+        return retryCount < MAX_RETRY_COUNT;
+    }
+
 }
