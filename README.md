@@ -102,8 +102,9 @@ Lagou课程的视频现托管在阿里云，[相关文档](https://help.aliyun.c
 5. 运行`App#main()` 方法.
 
 ## TODO
+ - [ ] 训练营课程下载重构
+ - [ ] 下载判重调整
  - [X] [加入文章下载](https://github.com/SweetInk/lagou-course-downloader/issues/16)
- 
  - [X] [阿里云点播HLS私有加密破解](https://github.com/SweetInk/lagou-course-downloader/issues/10)
 
  
