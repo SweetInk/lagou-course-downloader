@@ -143,13 +143,12 @@ public class HttpAPI {
 
     public static CourseLessonDetail getCourseLessonDetail(String lessonId, String lessonName) {
         String url = MessageFormat.format(COURSE_DETAIL_API, lessonId);
-        log.debug("获取课程详情URL:【{}】url：{}", lessonId, url);
         String videoJson = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
         JSONObject json = JSON.parseObject(videoJson);
         Integer state = json.getInteger("state");
         if (state != null && state != 1) {
-            log.info("获取视频视频信息失败:【{}】,json：{}", lessonName, videoJson);
-            throw new RuntimeException("获取视频信息失败:" + json.getString("message"));
+            log.info("获取课程详情失败:【{}】,json：{}", lessonName, videoJson);
+            throw new RuntimeException("获取课程详情失败:" + json.getString("message"));
         }
         JSONObject result = json.getJSONObject("content");
         return result.toJavaObject(CourseLessonDetail.class);
