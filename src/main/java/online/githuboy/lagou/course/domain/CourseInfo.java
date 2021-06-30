@@ -12,7 +12,7 @@ import java.util.List;
  */
 @Data
 public class CourseInfo {
-    private Boolean hasBuy;
+    private Boolean hasBuy = false;
     private String courseName;
     private String coverImage;
     private Integer videoChannelCode;

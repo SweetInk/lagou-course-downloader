@@ -37,26 +37,19 @@ public class App {
                 Course.getAllCoursePurchasedRecordForPC();
 
         log.info("开始下载课程 专栏ID列表：{}", allCoursePurchasedRecordForPC);
-
         //倒叙
         //Collections.reverse(allCoursePurchasedRecordForPC);
-
         allCoursePurchasedRecordForPC.removeAll(ConfigUtil.getDelCourse());
-
         //视频保存的目录
         String savePath = ConfigUtil.readValue("mp4_dir");
-
         // 开始下载所有课程
-        int i = 1;
         for (String courseId : allCoursePurchasedRecordForPC) {
             Downloader downloader = new Downloader(courseId, savePath,
                     DownloadType.loadByCode(Integer.valueOf(ConfigUtil.readValue("downloadType"))));
             // 这里可以增加你的调试代码，下载指定的lesson
-            //downloader.setDebugFilter(lesson -> lesson.getId().equals(7698));
+//            downloader.setDebugFilter(lesson -> lesson.getId().equals(7698));
             try {
                 downloader.start();
-                log.info("\n\n\n");
-                log.info("开始下载{}课程", i++);
 //            Thread.sleep(5000);
             } catch (Exception e) {
                 log.error(e.getMessage(), e);

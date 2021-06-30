@@ -90,6 +90,7 @@ public class Downloader {
         if (!CollectionUtil.isEmpty(lessons)) {
             int i = parseVideoInfo(courseId, lessons, this.downloadType);
             if (i > 0) {
+                log.info("开始下载 ：{}", courseName);
                 downloadMedia(i);
             } else {
                 //ConfigUtil.addCourse(courseId);
@@ -105,6 +106,10 @@ public class Downloader {
         List<LessonInfo> lessonInfoList = new ArrayList<>();
         // TODO retry
         CourseInfo courseInfo = HttpAPI.getCourseInfo(this.courseId);
+        if (!courseInfo.getHasBuy()) {
+            log.warn("课程:{}没有购买，无法下载", courseInfo.getCourseName());
+            return Collections.emptyList();
+        }
         courseName = courseInfo.getCourseName();
         this.basePath = new File(savePath, this.courseId + "_" + courseName);
         if (!basePath.exists()) {
@@ -153,11 +158,11 @@ public class Downloader {
                             }
                             return true;
                         }).filter(lesson -> {
-                            if (DocHistory.contains(lesson.getId() + "", lesson.getTheme(), courseId, courseName)
-                                    && Mp4History.contains(lesson.getId() + "", lesson.getTheme(), courseId, courseName)) {
-                                log.debug("课程视频和文章【{}】已经下载过了", lesson.getTheme());
-                                return false;
-                            }
+                                    if (DocHistory.contains(lesson.getId() + "", lesson.getTheme(), courseId, courseName)
+                                            && Mp4History.contains(lesson.getId() + "", lesson.getTheme(), courseId, courseName)) {
+                                        log.debug("课程视频和文章【{}】已经下载过了", lesson.getTheme());
+                                        return false;
+                                    }
                                     return true;
                                 }
                         ).map(lesson -> {
