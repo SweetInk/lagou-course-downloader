@@ -30,6 +30,7 @@ public class HttpAPI {
     private static final String COURSE_DETAIL_API = "https://gate.lagou.com/v1/neirong/kaiwu/getCourseLessonDetail?lessonId={0}";
     private final static String COURSE_INFO_API = "https://gate.lagou.com/v1/neirong/kaiwu/getCourseLessons?courseId={0}";
     private final static String COURSE_COMMENT_LIST_API = "https://gate.lagou.com/v1/neirong/course/comment/getCourseCommentList?courseId={0}&lessonId={1}&pageNum={2}&needCount=true";
+    private final static String PURCHASED_COURSE_API = "https://gate.lagou.com/v1/neirong/kaiwu/getAllCoursePurchasedRecordForPC?t={0}";
 
     public static CourseInfo getCourseInfo(String courseId) {
         String url = MessageFormat.format(COURSE_INFO_API, courseId);
@@ -57,6 +58,7 @@ public class HttpAPI {
 
     /**
      * 获取精选留言
+     *
      * @param courseId
      * @param lessonId
      * @return
@@ -162,5 +164,38 @@ public class HttpAPI {
             return null;
         }
         return jsonObject.getJSONObject("content").getString("playURL");
+    }
+
+    /**
+     * 获取已购课程信息
+     *
+     * @return
+     */
+    public static PurchasedCourseRecord getPurchasedCourseRecord() {
+        String url = MessageFormat.format(PURCHASED_COURSE_API, System.currentTimeMillis());
+        String body = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
+        JSONObject json = JSON.parseObject(body);
+        Integer state = json.getInteger("state");
+        if (state != null && state != 1) {
+            log.info("获取已购课程失败:json：{}", body);
+            throw new RuntimeException("获取已购课程失败:" + json.getString("message"));
+        }
+        JSONObject result = json.getJSONObject("content");
+        JSONArray jsonArray = result.getJSONArray("allCoursePurchasedRecord");
+        PurchasedCourseRecord record = new PurchasedCourseRecord();
+        for (int i = 0; i < jsonArray.size(); i++) {
+            JSONObject courseListObject = jsonArray.getJSONObject(i);
+            Integer courseType = courseListObject.getInteger("courseType");
+            if (1 == courseType) {
+                List<PurchasedCourseRecord.CourseInfo> bigCourseRecordList = courseListObject.getJSONArray("bigCourseRecordList").toJavaList(PurchasedCourseRecord.CourseInfo.class);
+                record.getTrainingCamp().addAll(bigCourseRecordList);
+            } else if (2 == courseType) {
+                List<PurchasedCourseRecord.CourseInfo> courseList = courseListObject.getJSONArray("courseRecordList").toJavaList(PurchasedCourseRecord.CourseInfo.class);
+                record.getColumns().addAll(courseList);
+            } else {
+                log.warn("未知的课程类型:{},json:{}", courseType, json.toJSONString());
+            }
+        }
+        return record;
     }
 }

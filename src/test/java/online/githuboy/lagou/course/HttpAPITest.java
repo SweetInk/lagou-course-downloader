@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import online.githuboy.lagou.course.domain.CourseCommentListInfo;
 import online.githuboy.lagou.course.domain.CourseInfo;
 import online.githuboy.lagou.course.domain.CourseLessonDetail;
+import online.githuboy.lagou.course.domain.PurchasedCourseRecord;
 import online.githuboy.lagou.course.request.HttpAPI;
 import online.githuboy.lagou.course.utils.FileUtils;
 import org.junit.Before;
@@ -67,5 +68,11 @@ public class HttpAPITest {
     public void tryGetPlayUrlFromKaiwuTest() {
         String url = HttpAPI.tryGetPlayUrlFromKaiwu("84fa978fd4ad463b82092f38b3239743");
         System.out.println(JSON.toJSONString(url));
+    }
+
+    @Test
+    public void getPurchasedRecord() {
+        PurchasedCourseRecord purchasedCourseRecord = HttpAPI.getPurchasedCourseRecord();
+        System.out.println(purchasedCourseRecord);
     }
 }
