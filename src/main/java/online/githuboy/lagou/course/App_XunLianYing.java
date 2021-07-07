@@ -19,7 +19,7 @@ public class App_XunLianYing {
     public static void main(String[] args) throws IOException, InterruptedException {
 
         // 拉钩训练营课程ID
-        String courseId = "33";
+        String courseId = "29";
         //  视频保存的目录
         String savePath = ConfigUtil.readValue("mp4_xunlianying_dir");
 

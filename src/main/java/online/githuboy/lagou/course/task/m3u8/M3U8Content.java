@@ -90,13 +90,18 @@ public class M3U8Content {
                     if (split.length > 0) {
                         duration = Float.parseFloat(split[1]);
                     }
-                    String nextToken = tokenizer.nextToken();
-                    String url = baseUrl + "/" + nextToken;
-                    String fileName = parseFileName(url);
+                    String path = tokenizer.nextToken();
+                    if (!path.startsWith("http")) {
+                        if (path.startsWith("/"))
+                            path = baseUrl + path;
+                        else
+                            path = baseUrl + "/" + path;
+                    }
+                    String fileName = parseFileName(path);
                     HSInfo hsInfo = new HSInfo();
                     hsInfo.setIndexName((tsIndex++) + ".ts");
                     hsInfo.setExtInfo(extInfo);
-                    hsInfo.setUrl(url);
+                    hsInfo.setUrl(path);
                     hsInfo.setDuration(duration);
                     hsInfo.setFileName(fileName);
                     tsList.add(hsInfo);
