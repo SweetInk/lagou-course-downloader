@@ -1,18 +1,16 @@
 package online.githuboy.lagou.course.task.m3u8;
 
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.HttpUtil;
 import lombok.Setter;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.support.CmdExecutor;
 import online.githuboy.lagou.course.support.ExecutorService;
+import online.githuboy.lagou.course.task.m3u8.support.M3U8ContentLoader;
 import online.githuboy.lagou.course.utils.FileUtils;
-import online.githuboy.lagou.course.utils.HttpUtils;
 
 import java.io.File;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * m3u8流下载器
@@ -20,51 +18,62 @@ import java.util.concurrent.CountDownLatch;
  * @author suchu
  * @date 2021/6/23
  */
+@Slf4j
 public class StreamDumper implements Runnable {
-    @Setter
-    private String m3u8Url;
+
     @Setter
     private File root;
+    @Setter
+    private M3U8ContentLoader m3U8ContentLoader;
 
-    public static void main(String[] args) {
-        File root = new File("D:\\Aproject\\ddDump\\s2");
-        if (!root.exists()) {
-            root.mkdirs();
-        }
-        StreamDumper dumper = new StreamDumper();
-        dumper.setM3u8Url("https://1252524126.vod2.myqcloud.com/2919df88vodtranscq1252524126/e28c32d23701925919770850299/v.f146750.m3u8");
-        dumper.setRoot(root);
-        new Thread(dumper).start();
+    public StreamDumper(File root, M3U8ContentLoader loader) {
+        this.root = root;
+        this.m3U8ContentLoader = loader;
     }
 
     @SneakyThrows
     @Override
     public void run() {
-        URL url = new URL(m3u8Url);
-        String urlPath = url.getPath();
         long start = System.currentTimeMillis();
-        String substring = urlPath.substring(0, urlPath.lastIndexOf('/'));
-        byte[] content = HttpUtils.getContent(m3u8Url);
-        FileUtils.save(content, new File(root, "1.m3u8"));
-        M3U8Content m3u8 = new M3U8Content(url.getProtocol() + "://" + url.getHost() + substring, new String(content, StandardCharsets.UTF_8));
+        M3U8Content m3u8 = m3U8ContentLoader.loadContent();
+        //save original file
+        FileUtils.save(m3u8.getRaw().getBytes(), new File(root, "1.m3u8"));
         String s = m3u8.rebuildM3U8Raw();
+        //save rebuild file
         FileUtils.save(s.getBytes(), new File(root, "1_copy.m3u8"));
-        //try parse key
-        if (StrUtil.isNotBlank(m3u8.getKeyUrl())) {
-            byte[] key = HttpUtil.downloadBytes(m3u8.getKeyUrl());
+        //try save key file
+        if (null != m3u8.getKey()) {
+            byte[] key = m3u8.getKey();
             FileUtils.save(key, new File(root, m3u8.getLocalKeyName()));
         }
+        AtomicInteger successCounter = new AtomicInteger(0);
+        AtomicInteger failCounter = new AtomicInteger(0);
         //download ts
         CountDownLatch latch = new CountDownLatch(m3u8.getTsList().size());
         m3u8.getTsList().forEach(tsInfo -> {
-            ExecutorService.getHlsExecutor().submit(new TsDownloader(latch, root, tsInfo.getUrl(), tsInfo.getIndexName()));
+            TsDownloader tsDownloader = new TsDownloader(latch, root, tsInfo.getUrl(), tsInfo.getIndexName());
+            tsDownloader.setCompleteHandler(new TsDownloader.CompleteHandler() {
+                @Override
+                public void success() {
+                    successCounter.incrementAndGet();
+                }
+
+                @Override
+                public void error(Exception e) {
+                    failCounter.incrementAndGet();
+                }
+            });
+            ExecutorService.getHlsExecutor().submit(tsDownloader);
         });
         latch.await();
-        System.out.println("所有TS下载完毕");
-        //merge
-
-        CmdExecutor.executeCmd(this.root, "ffmpeg", "-y", "-allowed_extensions", "ALL", "-loglevel", "repeat+level+trace", "-i", "1_copy.m3u8", "-c", "copy", "-bsf:a", "aac_adtstoasc", "1" + ".mp4");
-        System.out.println("视频合并完毕,耗时:" + (System.currentTimeMillis() - start) + " ms");
+        if (successCounter.get() == m3u8.getTsList().size()) {
+            log.info("所有TS下载完毕");
+            //merge
+            CmdExecutor.executeCmd(this.root, "ffmpeg", "-y", "-allowed_extensions", "ALL", "-loglevel", "repeat+level+trace", "-i", "1_copy.m3u8", "-c", "copy", "-bsf:a", "aac_adtstoasc", "1" + ".mp4");
+            log.info("视频合并完毕,耗时: {}", (System.currentTimeMillis() - start) + " ms");
+        } else {
+            log.warn("TS没有全部下载成功，失败:{}", failCounter.get());
+        }
         ExecutorService.getHlsExecutor().shutdown();
     }
 }

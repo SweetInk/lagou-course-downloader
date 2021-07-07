@@ -26,6 +26,8 @@ public class M3U8Content {
     private String baseUrl = "";
     private int tsIndex = 1;
     private String keyUrl;
+    @Setter
+    private byte[] key;
 
     public M3U8Content(String baseUrl, String raw) {
         this.raw = raw;
