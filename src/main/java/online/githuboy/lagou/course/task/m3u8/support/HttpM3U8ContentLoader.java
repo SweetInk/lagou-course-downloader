@@ -1,11 +1,17 @@
 package online.githuboy.lagou.course.task.m3u8.support;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HttpUtil;
 import lombok.SneakyThrows;
-import online.githuboy.lagou.course.utils.HttpUtils;
 
 import java.net.URL;
 
+/**
+ * 从http url下载m3u8内容
+ *
+ * @author suchu
+ * @date 2021/7/7
+ */
 public class HttpM3U8ContentLoader extends AbstractM3U8ContentLoader {
     private final String m3u8Url;
     private String baseUrl;
@@ -22,8 +28,8 @@ public class HttpM3U8ContentLoader extends AbstractM3U8ContentLoader {
         URL url = new URL(m3u8Url);
         String urlPath = url.getPath();
         String substring = urlPath.substring(0, urlPath.lastIndexOf('/'));
-        byte[] content = HttpUtils.getContent(m3u8Url);
-        this.baseUrl = url.getProtocol() + "://" + url.getHost() + substring;
+        byte[] content = HttpUtil.downloadBytes(m3u8Url);
+        this.baseUrl = url.getProtocol() + "://" + url.getHost() + ":" + url.getPort() + substring;
         return new String(content);
     }
 

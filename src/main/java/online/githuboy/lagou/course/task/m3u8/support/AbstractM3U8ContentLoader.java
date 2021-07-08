@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.task.m3u8.M3U8Content;
 
 /**
+ * 实现了m3u8封装，解析等公共逻辑
+ *
  * @author suchu
  * @date 2021/7/7
  */
@@ -27,7 +29,17 @@ public abstract class AbstractM3U8ContentLoader implements M3U8ContentLoader {
         return m3u8;
     }
 
+    /**
+     * 实际加载m3u8内容的方法，需要子类重新
+     *
+     * @return
+     */
     public abstract String loadInternal();
 
+    /**
+     * m3u8文件中的baseUrl，用于下载ts文件
+     *
+     * @return
+     */
     public abstract String getBaseUrl();
 }

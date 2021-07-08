@@ -1,9 +1,9 @@
 package online.githuboy.lagou.course.task.m3u8;
 
+import cn.hutool.http.HttpUtil;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.utils.FileUtils;
-import online.githuboy.lagou.course.utils.HttpUtils;
 
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
@@ -34,23 +34,26 @@ public class TsDownloader implements Runnable {
     public void run() {
         try {
             File tsFile = new File(root, fileName);
-            if (tsFile.exists() && tsFile.length() > 0) {
-                return;
+            if (!(tsFile.exists() && tsFile.length() > 0)) {
+                byte[] content = HttpUtil.downloadBytes(url);
+                FileUtils.save(content, new File(root, fileName));
             }
-            byte[] content = HttpUtils.getContent(url);
-            FileUtils.save(content, new File(root, fileName));
             log.info("ts文件:{}下载完成", url);
             if (null != completeHandler)
                 completeHandler.success();
         } catch (Exception e) {
             if (null != completeHandler) completeHandler.error(e);
-            log.error("ts文件:{}下载出错", url, e);
+            log.error("ts文件:{}下载出错 ", url, e);
         } finally {
             latch.countDown();
         }
     }
 
+    /**
+     * 任务执行完成后的回调
+     */
     public interface CompleteHandler {
+
         default void success() {
         }
 
