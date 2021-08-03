@@ -2,11 +2,16 @@ package online.githuboy.lagou.course.support;
 
 import online.githuboy.lagou.course.domain.PurchasedCourseRecord;
 import online.githuboy.lagou.course.request.HttpAPI;
+import online.githuboy.lagou.course.utils.ConfigUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author eric
@@ -35,5 +40,42 @@ public class Course {
         });
         log.info("一共有{}门课程", courseIdSets.size());
         return courseIdSets;
+    }
+    /**
+     *  获取指定类别的课程id
+     * @param classifyIds 课程类别集合
+     * @return
+     */
+	public static Set<String> getAllCourseVipForPC(List<String> classifyIds) {
+		Set<String> set = new HashSet<String>();
+		Map<String, List<String>> courses = HttpAPI.listCourse();
+
+		if (classifyIds.size() == 1 && classifyIds.get(0).equals("0")) {
+			for (List<String> list : courses.values()) {
+				set.addAll(list);
+			}
+		} else {
+			for (String classify : classifyIds) {
+				set.addAll(courses.get(classify));
+			}
+		}
+
+		return set;
+	}
+    /**
+     *  vip自动订阅指定类别的课程
+     * @return   成功订阅的课程id
+     */
+    public static Set<String> drawCourse() {
+    	
+    	List<String> allCoursePurchasedRecordForPC = Course.getAllCoursePurchasedRecordForPC(); 
+    	// 所有指定订阅的课程
+    	List<String> classifyIds = ConfigUtil.getClassifyIds(); 
+		Set<String> courseIds = Course.getAllCourseVipForPC(classifyIds); 
+		courseIds.removeAll(allCoursePurchasedRecordForPC) ; 
+		for (String courseId : courseIds) {
+			HttpAPI.drawCourse(courseId);
+		}
+		return courseIds ; 
     }
 }

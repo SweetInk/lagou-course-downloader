@@ -12,6 +12,7 @@ import online.githuboy.lagou.course.utils.ConfigUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 启动类
@@ -35,7 +36,10 @@ public class App {
         List<String> allCoursePurchasedRecordForPC = CollectionUtil.isNotEmpty(ConfigUtil.getCourseIds()) ?
                 ConfigUtil.getCourseIds() :
                 Course.getAllCoursePurchasedRecordForPC();
-
+                
+        // 如果是vip，可以选择自动订阅课程。 
+		Set<String> courseIds = Course.drawCourse(); 
+		allCoursePurchasedRecordForPC.addAll(courseIds) ; 
         log.info("开始下载课程 专栏ID列表：{}", allCoursePurchasedRecordForPC);
         //倒叙
         //Collections.reverse(allCoursePurchasedRecordForPC);
