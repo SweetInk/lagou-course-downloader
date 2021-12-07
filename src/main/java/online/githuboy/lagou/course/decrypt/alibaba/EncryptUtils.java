@@ -12,6 +12,10 @@ import cn.hutool.crypto.symmetric.AES;
 
 import java.io.ByteArrayInputStream;
 import java.security.PublicKey;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 阿里云点播私有加密工具
@@ -26,6 +30,8 @@ public class EncryptUtils {
             "gBLHdydsftMVPNHrRuPKQNZRslWE1vvgx80w9lCllIUCAwEAAQ==\n" +
             "-----END PUBLIC KEY-----\n";
     private static final PublicKey publicKey = PemUtil.readPemPublicKey(new ByteArrayInputStream(PUBLIC_KEY_STR.getBytes()));
+    private final static int[] PLAY_AUTH_SIGN1 = new int[]{52, 58, 53, 121, 116, 102};
+    private final static int[] PLAY_AUTH_SIGN2 = new int[]{90, 91};
 
     static {
         rsa.setPublicKey(publicKey);
@@ -72,5 +78,109 @@ public class EncryptUtils {
 
     public static byte[] convert(String str) {
         return Base64.decode(Base64.encode(str));
+    }
+
+    public static String decodeSignedPlayAuth2B64(String playAuth) {
+        int x = 4;
+        int i = 0;
+        int factor = 0;
+        String sign1 = _getSignStr(PLAY_AUTH_SIGN1);
+        String sign2 = _getSignStr(PLAY_AUTH_SIGN2);
+        playAuth = playAuth
+                .replaceFirst(sign1, "")
+                .replace(sign2, "");
+        char[] strTokenList = playAuth.toCharArray();
+        List<Integer> charCodeList = new ArrayList<>();
+        List<Integer> newCharCodeList = new ArrayList<>();
+        while (x >= 0) {
+            switch (x % 4) {
+                case 0: {
+                    switch ((x / 4)) {
+                        case 0:
+                            x = i < strTokenList.length ? 8 : 2;
+                            break;
+                        case 1: {
+                            Calendar calendar = Calendar.getInstance();
+                            factor = calendar.get(Calendar.YEAR) / 100;
+                            i = 0;
+                            x = 0;
+                            break;
+                        }
+                        case 2: {
+                            charCodeList.add((int) strTokenList[i]);
+                            x = 12;
+                            break;
+                        }
+                        case 3: {
+                            i++;
+                            x = 0;
+                            break;
+                        }
+                    }
+                }
+                break;
+                case 1: {
+                    switch (x / 4) {
+                        case 0: {
+                            x = i < charCodeList.size() ? 5 : 3;
+                            break;
+                        }
+                        case 1: {
+                            int code = charCodeList.get(i);
+                            int r = code / factor;
+                            int z = factor / 10;
+                            newCharCodeList.add(r == z ? code : code - 1);
+                            x = 9;
+                            break;
+                        }
+                        case 2: {
+                            i++;
+                            x = 1;
+                            break;
+                        }
+                    }
+                }
+                break;
+                case 2: {
+                    i = 0;
+                    x = 1;
+                    break;
+                }
+                case 3: {
+                    return newCharCodeList.stream().map(temp -> {
+                        char temp1 = (char) temp.intValue();
+                        return temp1 + "";
+                    }).collect(Collectors.joining(""));
+                }
+            }
+        }
+        return "";
+    }
+
+    public static String decodePlayAuth(String playAuth) {
+        if (isSignedPlayAuth(playAuth)) {
+            String playAuthBase64 = decodeSignedPlayAuth2B64(playAuth);
+            return Base64.decodeStr(playAuthBase64);
+        } else {
+            return Base64.decodeStr(playAuth);
+        }
+    }
+
+    private static boolean isSignedPlayAuth(String str) {
+        int signPos1 = Calendar.getInstance().get(Calendar.YEAR) / 100;
+        int signPos2 = str.length() - 2;
+        String sign1 = _getSignStr(PLAY_AUTH_SIGN1);
+        String sign2 = _getSignStr(PLAY_AUTH_SIGN2);
+        String r1 = str.substring(signPos1, signPos1 + sign1.length());
+        String r2 = str.substring(signPos2);
+        return sign1.equals(r1) && sign2.equals(r2);
+    }
+
+    public static String _getSignStr(int[] sign) {
+        StringBuilder result = new StringBuilder(sign.length);
+        for (int i = 0; i < sign.length; i++) {
+            result.append((char) (sign[i] - i));
+        }
+        return result.toString();
     }
 }

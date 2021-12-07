@@ -41,7 +41,7 @@ public class AliyunApiUtils {
 
     @SneakyThrows
     public static String getPlayInfoRequestUrl(String rand, String aliPlayAuth, String fileId, String formats) {
-        String playAuthStr = cn.hutool.core.codec.Base64.decodeStr(aliPlayAuth);
+        String playAuthStr = EncryptUtils.decodePlayAuth(aliPlayAuth);
         PlayAuth playAuth = PlayAuth.from(playAuthStr);
         Map<String, String> publicParam = new HashMap<>();
         Map<String, String> privateParam = new HashMap<>();
