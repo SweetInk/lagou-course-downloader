@@ -39,6 +39,20 @@ public class AliyunApiUtils {
         return getPlayInfoRequestUrl("", aliPlayAuth, fileId, "");
     }
 
+    public static String decryptAliPlayAuth(String aliPlayAuth){
+        Calendar cal = Calendar.getInstance();
+        int signPos1 = cal.get(Calendar.YEAR) / 100;
+        aliPlayAuth = aliPlayAuth.substring(0, signPos1) + aliPlayAuth.substring(signPos1 + 6, aliPlayAuth.length() - 2);
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < aliPlayAuth.length(); i++) {
+            int code = aliPlayAuth.codePointAt(i);
+            int r = code / signPos1;
+            int z = signPos1 / 10;
+            stringBuilder.append(r == z ? (char)code : (char)(code - 1));
+        }
+        return stringBuilder.toString();
+    }
+
     @SneakyThrows
     public static String getPlayInfoRequestUrl(String rand, String aliPlayAuth, String fileId, String formats) {
         String playAuthStr = EncryptUtils.decodePlayAuth(aliPlayAuth);
