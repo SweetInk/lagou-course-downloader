@@ -81,80 +81,24 @@ public class EncryptUtils {
     }
 
     public static String decodeSignedPlayAuth2B64(String playAuth) {
-        int x = 4;
-        int i = 0;
-        int factor = 0;
         String sign1 = _getSignStr(PLAY_AUTH_SIGN1);
         String sign2 = _getSignStr(PLAY_AUTH_SIGN2);
         playAuth = playAuth
-                .replaceFirst(sign1, "")
-                .replace(sign2, "");
-        char[] strTokenList = playAuth.toCharArray();
-        List<Integer> charCodeList = new ArrayList<>();
+                .replaceFirst(sign1, "");
+        playAuth = playAuth
+                .substring(0, playAuth.length() - sign2.length());
+        int factor = Calendar.getInstance().get(Calendar.YEAR) / 100;
         List<Integer> newCharCodeList = new ArrayList<>();
-        while (x >= 0) {
-            switch (x % 4) {
-                case 0: {
-                    switch ((x / 4)) {
-                        case 0:
-                            x = i < strTokenList.length ? 8 : 2;
-                            break;
-                        case 1: {
-                            Calendar calendar = Calendar.getInstance();
-                            factor = calendar.get(Calendar.YEAR) / 100;
-                            i = 0;
-                            x = 0;
-                            break;
-                        }
-                        case 2: {
-                            charCodeList.add((int) strTokenList[i]);
-                            x = 12;
-                            break;
-                        }
-                        case 3: {
-                            i++;
-                            x = 0;
-                            break;
-                        }
-                    }
-                }
-                break;
-                case 1: {
-                    switch (x / 4) {
-                        case 0: {
-                            x = i < charCodeList.size() ? 5 : 3;
-                            break;
-                        }
-                        case 1: {
-                            int code = charCodeList.get(i);
-                            int r = code / factor;
-                            int z = factor / 10;
-                            newCharCodeList.add(r == z ? code : code - 1);
-                            x = 9;
-                            break;
-                        }
-                        case 2: {
-                            i++;
-                            x = 1;
-                            break;
-                        }
-                    }
-                }
-                break;
-                case 2: {
-                    i = 0;
-                    x = 1;
-                    break;
-                }
-                case 3: {
-                    return newCharCodeList.stream().map(temp -> {
-                        char temp1 = (char) temp.intValue();
-                        return temp1 + "";
-                    }).collect(Collectors.joining(""));
-                }
-            }
+        for (int i = 0; i < playAuth.length(); i++) {
+            int code = playAuth.charAt(i);
+            int r = code / factor;
+            int z = factor / 10;
+            newCharCodeList.add(r == z ? code : code - 1);
         }
-        return "";
+        return newCharCodeList.stream().map(charCode -> {
+            char v = (char) charCode.intValue();
+            return v + "";
+        }).collect(Collectors.joining());
     }
 
     public static String decodePlayAuth(String playAuth) {
