@@ -16,7 +16,7 @@
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-http</artifactId>
-            <version>5.6.1</version>
+            <version>5.7.19</version>
         </dependency>
         <dependency>
             <groupId>cn.hutool</groupId>
