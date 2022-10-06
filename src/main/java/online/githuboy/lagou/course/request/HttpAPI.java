@@ -14,7 +14,9 @@ import online.githuboy.lagou.course.utils.HttpUtils;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -31,6 +33,8 @@ public class HttpAPI {
     private final static String COURSE_INFO_API = "https://gate.lagou.com/v1/neirong/kaiwu/getCourseLessons?courseId={0}";
     private final static String COURSE_COMMENT_LIST_API = "https://gate.lagou.com/v1/neirong/course/comment/getCourseCommentList?courseId={0}&lessonId={1}&pageNum={2}&needCount=true";
     private final static String PURCHASED_COURSE_API = "https://gate.lagou.com/v1/neirong/kaiwu/getAllCoursePurchasedRecordForPC?t={0}";
+    private final static String COURSE_LIST_API = "https://gate.lagou.com/v1/neirong/edu/homepage/getCourseListV2?isPc=true&t={0}";
+    private final static String COURSE_DRAW_API = "https://gate.lagou.com/v1/neirong/edu/member/drawCourse?courseId={0}";
 
     public static CourseInfo getCourseInfo(String courseId) {
         String url = MessageFormat.format(COURSE_INFO_API, courseId);
@@ -197,4 +201,77 @@ public class HttpAPI {
         }
         return record;
     }
+    
+    /**
+     * 列出所有的课程
+     *  
+     * @return Map<String, List<String>>  课程类别->课程id集合
+     */
+	public static Map<String, List<String>> listCourse() {
+		String url = MessageFormat.format(COURSE_LIST_API, System.currentTimeMillis());
+		String body = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
+		JSONObject json = JSON.parseObject(body);
+		Integer state = json.getInteger("state");
+		if (state != null && state != 1) {
+			log.info("获取所有课程失败:json：{}", body);
+			throw new RuntimeException("获取所有课程失败:" + json.getString("message"));
+		}
+
+		JSONObject result = json.getJSONObject("content");
+		JSONArray cardListJsonArray = result.getJSONArray("contentCardList");
+		Map<String, List<String>> map = new HashMap<String, List<String>>();
+
+		for (int i = 0; i < cardListJsonArray.size(); i++) {
+			JSONObject card = cardListJsonArray.getJSONObject(i);
+			JSONArray courseList = card.getJSONArray("courseList");
+			for (int j = 0; j < courseList.size(); j++) {
+				JSONObject course = courseList.getJSONObject(j);
+
+				JSONArray classifyIds = course.getJSONArray("classifyIds");
+				if (classifyIds != null) {
+
+					for (int k = 0; k < classifyIds.size(); k++) {
+						String classify = classifyIds.get(k).toString();
+						List<String> list = map.get(classify);
+						if (list == null) {
+							list = new ArrayList<>();
+							map.put(classify, list);
+						}
+						list.add(course.getString("id"));
+					}
+				}
+			}
+		}
+		return map;
+
+	}
+    /**
+     * vip订阅课程 
+     * @param courseId
+     */
+	public static void drawCourse(String courseId) {
+
+		String url = MessageFormat.format(COURSE_DRAW_API, courseId);
+		log.debug("订阅课程:{}，url：{}", courseId, url);
+		HttpRequest httpRequest = HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}");
+		String body;
+		try {
+			body = httpRequest.execute().body();
+		} catch (Exception e) {
+			try {
+				Thread.sleep(RandomUtil.randomLong(500L, TimeUnit.SECONDS.toMillis(1)));
+			} catch (InterruptedException interruptedException) {
+				log.error(interruptedException.getMessage(), interruptedException);
+			}
+			log.info("订阅课程 重试1次");
+			body = httpRequest.execute().body();
+		}
+
+		JSONObject jsonObject = JSON.parseObject(body);
+		Integer state = jsonObject.getInteger("state");
+		if (state != null && state != 1) {
+			log.info("订阅课程失败:json：{}", body);
+			throw new RuntimeException("订阅课程失败:" + jsonObject.getString("message"));
+		}
+	}
 }

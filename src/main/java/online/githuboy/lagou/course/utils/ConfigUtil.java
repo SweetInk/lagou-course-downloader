@@ -61,6 +61,12 @@ public class ConfigUtil {
         Set<String> set = ArrayUtils.isEmpty(split) ? new HashSet<>() : new HashSet<>(Arrays.asList(split));
         return set.stream().map(String::trim).collect(Collectors.toList());
     }
+    public static List<String> getClassifyIds() {
+    	String courseIds = readValue("classifyIds");
+    	String[] split = StringUtils.split(courseIds, ",");
+    	Set<String> set = ArrayUtils.isEmpty(split) ? new HashSet<>() : new HashSet<>(Arrays.asList(split));
+    	return set.stream().map(String::trim).collect(Collectors.toList());
+    }
 
     public static void main(String[] args) {
         System.out.println(ConfigUtil.readValue("mp4_dir"));
